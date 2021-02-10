@@ -1,0 +1,1 @@
+DROP TABLE IF EXISTS at_least_once_tasks;

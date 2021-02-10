@@ -42,9 +42,10 @@ func asErrorResponse(ctx context.Context, err error) *responses.ErrorResponse {
 	if he, ok := err.(*echo.HTTPError); ok {
 		if he.Code >= 500 {
 			return &responses.ErrorResponse{
-				Code:     http.StatusInternalServerError,
-				Error:    fmt.Sprintf("Internal Server Error"),
-				Internal: err,
+				Code:        http.StatusInternalServerError,
+				Error:       "Internal Server Error",
+				Description: err.Error(),
+				Internal:    err,
 			}
 		}
 		er := &responses.ErrorResponse{

@@ -3,6 +3,7 @@
 package tools
 
 import (
+	_ "github.com/aws/aws-sdk-go"
 	_ "github.com/golang-migrate/migrate/v4/cmd/migrate" //--tags='cockroachdb','postgres'
 	_ "github.com/golang-migrate/migrate/v4/database/postgres"
 	_ "github.com/golang-migrate/migrate/v4/source/github"

@@ -35,3 +35,6 @@ migrate:
 
 migrate-down:
 	migrate -verbose -path ./migrations -database postgres://postgres:password@localhost:5432/postgres?sslmode=disable down
+
+migrate-down-single:
+	migrate -verbose -path ./migrations -database postgres://postgres:password@localhost:5432/postgres?sslmode=disable down 1

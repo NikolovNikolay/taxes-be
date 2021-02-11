@@ -1,6 +1,7 @@
 package statementsview
 
 import (
+	"context"
 	"fmt"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
@@ -12,18 +13,32 @@ import (
 	"github.com/sirupsen/logrus"
 	"mime/multipart"
 	"net/http"
+	"strings"
+	"taxes-be/internal/atleastonce"
 	"taxes-be/internal/core"
+	"taxes-be/internal/inquiries/inquiriesdao"
+	"taxes-be/internal/models"
+	"time"
 )
 
 type UploadFilesEndpoint struct {
-	awsSession *session.Session
-	bucketName string
+	inquiryStore *inquiriesdao.Store
+	aloStore     atleastonce.Store
+	awsSession   *session.Session
+	bucketName   string
 }
 
-func NewUploadFilesEndpoint(awsSession *session.Session, bucketName string) *UploadFilesEndpoint {
+func NewUploadFilesEndpoint(
+	inquiryStore *inquiriesdao.Store,
+	aloStore atleastonce.Store,
+	awsSession *session.Session,
+	bucketName string,
+) *UploadFilesEndpoint {
 	return &UploadFilesEndpoint{
-		bucketName: bucketName,
-		awsSession: awsSession,
+		inquiryStore: inquiryStore,
+		aloStore:     aloStore,
+		bucketName:   bucketName,
+		awsSession:   awsSession,
 	}
 }
 
@@ -46,6 +61,9 @@ func (ep *UploadFilesEndpoint) ServeHTTP(c echo.Context) error {
 
 	mf := req.MultipartForm
 	files := mf.File["statements"]
+	allFileNames := make([]string, 0)
+
+	prefix := fmt.Sprintf("%d", time.Now().Unix())
 	for i := range files {
 		t := readFileExtension(files[i])
 		if t == nil || !isSupportedExtension(t) {
@@ -64,7 +82,7 @@ func (ep *UploadFilesEndpoint) ServeHTTP(c echo.Context) error {
 			})
 		}
 
-		fileName := fmt.Sprintf("%s.%s", uuid.New().String(), t.Extension)
+		fileName := fmt.Sprintf("%s_%s.%s", prefix, uuid.New().String(), t.Extension)
 		uploader := s3manager.NewUploader(ep.awsSession)
 
 		_, err = uploader.Upload(&s3manager.UploadInput{
@@ -81,10 +99,45 @@ func (ep *UploadFilesEndpoint) ServeHTTP(c echo.Context) error {
 				Message: "could not process statements",
 			})
 		}
+
+		allFileNames = append(allFileNames, fileName)
+
 		file.Close()
 	}
 
-	return c.NoContent(http.StatusOK)
+	id := uuid.New()
+	err = ep.inquiryStore.InTransaction(req.Context(), func(ctx context.Context) error {
+		err = ep.inquiryStore.AddInquiry(ctx, &models.Inquiry{
+			ID:     id.String(),
+			UserID: uuid.New().String(),
+			Prefix: prefix,
+			Files:  strings.Join(allFileNames, ","),
+		})
+
+		if err != nil {
+			return err
+		}
+
+		err = ep.aloStore.Save(ctx, atleastonce.Task{
+			Key: "process_statement",
+			ID:  id,
+		})
+		if err != nil {
+			return err
+		}
+
+		return nil
+	})
+
+	if err != nil {
+		logrus.Errorf("error processing statements: %v", err)
+		return core.CtxAware(req.Context(), &echo.HTTPError{
+			Code:    http.StatusInternalServerError,
+			Message: "could not process statements",
+		})
+	}
+
+	return c.NoContent(http.StatusCreated)
 }
 
 func readFileExtension(f *multipart.FileHeader) *types.Type {

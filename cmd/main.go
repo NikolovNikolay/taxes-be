@@ -5,6 +5,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/caarlos0/env"
 	sdformatter "github.com/joonix/log"
 	"github.com/labstack/echo"
@@ -12,10 +13,13 @@ import (
 	_ "github.com/lib/pq"
 	"github.com/sirupsen/logrus"
 	"net/http"
+	_ "net/http/pprof"
 	"os"
 	"taxes-be/internal/atleastonce"
 	"taxes-be/internal/atleastonce/atleastoncedao"
 	"taxes-be/internal/cron"
+	"taxes-be/internal/inquiries/inquiriesdao"
+	"taxes-be/internal/statements"
 	"taxes-be/internal/statements/statementsview"
 	"taxes-be/utils/echoaddons"
 	logrusctx "taxes-be/utils/logrus"
@@ -63,18 +67,29 @@ func main() {
 	}()
 	logrus.Debug("connected to DB")
 
+	inquiryStore := inquiriesdao.NewStore(db)
+
 	aloStore := atleastoncedao.NewStore(db)
 	aloDoer := atleastonce.New(aloStore)
 	defer aloDoer.Close()
 
 	awsSession := connectAws(cfg)
+	s3 := s3.New(awsSession)
+
+	statements.NewStatementManager(*aloDoer, s3, cfg.S3StatementsBucketName)
 
 	e := echo.New()
 	e.Validator = echoaddons.NewValidator()
 	e.HTTPErrorHandler = echoaddons.CustomHTTPErrorHandler
 	e.Use(middleware.CORS())
 
-	statementsview.RegisterStatementsEndpoints(e.Group("/api/statements"), awsSession, cfg.S3StatementsBucketName)
+	statementsview.RegisterStatementsEndpoints(
+		e.Group("/api/statements"),
+		awsSession,
+		cfg.S3StatementsBucketName,
+		inquiryStore,
+		aloStore,
+	)
 
 	http.Handle("/", e)
 

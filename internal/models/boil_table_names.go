@@ -5,6 +5,8 @@ package models
 
 var TableNames = struct {
 	AtLeastOnceTasks string
+	Inquiries        string
 }{
 	AtLeastOnceTasks: "at_least_once_tasks",
+	Inquiries:        "inquiries",
 }

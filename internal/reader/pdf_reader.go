@@ -15,8 +15,9 @@ func NewPDFReader() Reader {
 
 func (pr pdfReader) validatePDFStructure(path string) error {
 	f, err := os.OpenFile(path, os.O_APPEND|os.O_RDWR, os.ModeAppend)
-	defer f.Close()
-
+	if err != nil {
+		return err
+	}
 	b := make([]byte, 10)
 	_, err = f.ReadAt(b, 0)
 
@@ -30,7 +31,7 @@ func (pr pdfReader) validatePDFStructure(path string) error {
 			return err
 		}
 	}
-
+	_ = f.Close()
 	return nil
 }
 
@@ -41,8 +42,6 @@ func (pr pdfReader) Read(path string) ([]string, error) {
 	}
 
 	f, r, err := pdf.Open(path)
-	defer f.Close()
-
 	if err != nil {
 		return nil, err
 	}
@@ -58,5 +57,7 @@ func (pr pdfReader) Read(path string) ([]string, error) {
 	}
 	text := buf.String()
 	lines := strings.Split(text, "\n")
+
+	_ = f.Close()
 	return lines, nil
 }

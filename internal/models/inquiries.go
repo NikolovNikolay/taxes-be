@@ -26,6 +26,7 @@ type Inquiry struct {
 	ID        string    `boil:"id" json:"id" toml:"id" yaml:"id"`
 	UserID    string    `boil:"user_id" json:"user_id" toml:"user_id" yaml:"user_id"`
 	Files     string    `boil:"files" json:"files" toml:"files" yaml:"files"`
+	Type      int       `boil:"type" json:"type" toml:"type" yaml:"type"`
 	Prefix    string    `boil:"prefix" json:"prefix" toml:"prefix" yaml:"prefix"`
 	CreatedAt time.Time `boil:"created_at" json:"created_at" toml:"created_at" yaml:"created_at"`
 
@@ -37,28 +38,55 @@ var InquiryColumns = struct {
 	ID        string
 	UserID    string
 	Files     string
+	Type      string
 	Prefix    string
 	CreatedAt string
 }{
 	ID:        "id",
 	UserID:    "user_id",
 	Files:     "files",
+	Type:      "type",
 	Prefix:    "prefix",
 	CreatedAt: "created_at",
 }
 
 // Generated where
 
+type whereHelperint struct{ field string }
+
+func (w whereHelperint) EQ(x int) qm.QueryMod  { return qmhelper.Where(w.field, qmhelper.EQ, x) }
+func (w whereHelperint) NEQ(x int) qm.QueryMod { return qmhelper.Where(w.field, qmhelper.NEQ, x) }
+func (w whereHelperint) LT(x int) qm.QueryMod  { return qmhelper.Where(w.field, qmhelper.LT, x) }
+func (w whereHelperint) LTE(x int) qm.QueryMod { return qmhelper.Where(w.field, qmhelper.LTE, x) }
+func (w whereHelperint) GT(x int) qm.QueryMod  { return qmhelper.Where(w.field, qmhelper.GT, x) }
+func (w whereHelperint) GTE(x int) qm.QueryMod { return qmhelper.Where(w.field, qmhelper.GTE, x) }
+func (w whereHelperint) IN(slice []int) qm.QueryMod {
+	values := make([]interface{}, 0, len(slice))
+	for _, value := range slice {
+		values = append(values, value)
+	}
+	return qm.WhereIn(fmt.Sprintf("%s IN ?", w.field), values...)
+}
+func (w whereHelperint) NIN(slice []int) qm.QueryMod {
+	values := make([]interface{}, 0, len(slice))
+	for _, value := range slice {
+		values = append(values, value)
+	}
+	return qm.WhereNotIn(fmt.Sprintf("%s NOT IN ?", w.field), values...)
+}
+
 var InquiryWhere = struct {
 	ID        whereHelperstring
 	UserID    whereHelperstring
 	Files     whereHelperstring
+	Type      whereHelperint
 	Prefix    whereHelperstring
 	CreatedAt whereHelpertime_Time
 }{
 	ID:        whereHelperstring{field: "\"inquiries\".\"id\""},
 	UserID:    whereHelperstring{field: "\"inquiries\".\"user_id\""},
 	Files:     whereHelperstring{field: "\"inquiries\".\"files\""},
+	Type:      whereHelperint{field: "\"inquiries\".\"type\""},
 	Prefix:    whereHelperstring{field: "\"inquiries\".\"prefix\""},
 	CreatedAt: whereHelpertime_Time{field: "\"inquiries\".\"created_at\""},
 }
@@ -80,8 +108,8 @@ func (*inquiryR) NewStruct() *inquiryR {
 type inquiryL struct{}
 
 var (
-	inquiryAllColumns            = []string{"id", "user_id", "files", "prefix", "created_at"}
-	inquiryColumnsWithoutDefault = []string{"user_id", "files", "prefix"}
+	inquiryAllColumns            = []string{"id", "user_id", "files", "type", "prefix", "created_at"}
+	inquiryColumnsWithoutDefault = []string{"user_id", "files", "type", "prefix"}
 	inquiryColumnsWithDefault    = []string{"id", "created_at"}
 	inquiryPrimaryKeyColumns     = []string{"id"}
 )

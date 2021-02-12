@@ -59,7 +59,7 @@ func (s *Store) Find(ctx context.Context, key string, id uuid.UUID) (task *atlea
 		return err
 	})
 	if err != nil {
-		err = err
+		return nil, err
 	}
 
 	return task, err

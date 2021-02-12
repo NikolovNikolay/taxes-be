@@ -1,6 +1,8 @@
 package core
 
-import "time"
+import (
+	"time"
+)
 
 type ActivityType string
 
@@ -25,6 +27,14 @@ const (
 	BGN Currency = "BGN"
 )
 
+const (
+	Unknown StatementType = iota + 1
+	Revolut
+	EToro
+)
+
+type StatementType int
+
 type LinkedActivity struct {
 	Activity
 	OpenDate   time.Time
@@ -48,10 +58,18 @@ type DividendMeta struct {
 	Tax         float64
 }
 
+type Amounts struct {
+	TotalBuy  float64
+	TotalSell float64
+}
+
 type Report struct {
+	RequestID     string
 	Activities    []LinkedActivity
 	OpenPositions []*OpenPosition
 	Dividends     DividendMeta
+	Amounts       Amounts
+	Tax           float64
 	StartDate     *time.Time
 	EndDate       *time.Time
 	Deposits      float64

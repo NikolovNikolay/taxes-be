@@ -1,8 +1,6 @@
 package echoaddons
 
 import (
-	"context"
-	"fmt"
 	"github.com/labstack/echo"
 	"github.com/sirupsen/logrus"
 	"net/http"
@@ -17,7 +15,7 @@ func CustomHTTPErrorHandler(err error, c echo.Context) {
 		ctx = cae.Ctx
 	}
 
-	respErr := asErrorResponse(ctx, err)
+	respErr := asErrorResponse(err)
 
 	le := logrus.WithContext(ctx).WithError(err)
 	if respErr.Code >= 500 {
@@ -32,10 +30,9 @@ func CustomHTTPErrorHandler(err error, c echo.Context) {
 	}
 }
 
-func asErrorResponse(ctx context.Context, err error) *responses.ErrorResponse {
+func asErrorResponse(err error) *responses.ErrorResponse {
 	// unpack context aware errors
 	if cae, ok := err.(*core.ContextAwareError); ok {
-		ctx = cae.Ctx
 		err = cae.Wrapped
 	}
 
@@ -62,7 +59,7 @@ func asErrorResponse(ctx context.Context, err error) *responses.ErrorResponse {
 	if core.IsValidationError(err) {
 		return &responses.ErrorResponse{
 			Code:        http.StatusBadRequest,
-			Error:       fmt.Sprintf("Bad Request"),
+			Error:       "Bad Request",
 			Description: err.Error(),
 			Internal:    err,
 		}
@@ -71,7 +68,7 @@ func asErrorResponse(ctx context.Context, err error) *responses.ErrorResponse {
 	if core.IsNotFound(err) {
 		return &responses.ErrorResponse{
 			Code:        http.StatusNotFound,
-			Error:       fmt.Sprintf("Not found"),
+			Error:       "Not found",
 			Description: err.Error(),
 			Internal:    err,
 		}
@@ -79,7 +76,7 @@ func asErrorResponse(ctx context.Context, err error) *responses.ErrorResponse {
 
 	return &responses.ErrorResponse{
 		Code:     http.StatusInternalServerError,
-		Error:    fmt.Sprintf("Internal Server Error"),
+		Error:    "Internal Server Error",
 		Internal: err,
 	}
 }

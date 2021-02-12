@@ -8,26 +8,16 @@ import (
 )
 
 type etoroTaxCalculator struct {
-	es          *conversion.ExchangeRateService
-	dayMap      map[string]*balance
-	tokenMap    map[string]map[string]*balance
-	activityMap map[string]map[string][]core.LinkedActivity
+	es *conversion.ExchangeRateService
 }
 
 func NewEТoroTaxCalculator(es *conversion.ExchangeRateService) Calculator {
 	return &etoroTaxCalculator{
-		es:          es,
-		dayMap:      map[string]*balance{},
-		tokenMap:    map[string]map[string]*balance{},
-		activityMap: map[string]map[string][]core.LinkedActivity{},
+		es: es,
 	}
 }
 
-func (c etoroTaxCalculator) Calculate(report *core.Report) (float64, error) {
-	return 0, nil
-}
-
-func (c etoroTaxCalculator) CalculateYear(report *core.Report, year int) (float64, error) {
+func (c etoroTaxCalculator) CalculateYear(report *core.Report, year int) error {
 	var gtb float64
 	var totalBuyAmount float64
 	var totalSellAmount float64
@@ -57,7 +47,7 @@ func (c etoroTaxCalculator) CalculateYear(report *core.Report, year int) (float6
 		}
 
 		if a.OpenDate.Year() != year || a.ClosedDate.Year() != year {
-			logrus.Info("activity profit/loss not in current year: ", a)
+			logrus.Debug("activity profit/loss not in current year: ", a)
 			continue
 		}
 
@@ -69,34 +59,18 @@ func (c etoroTaxCalculator) CalculateYear(report *core.Report, year int) (float6
 		gtb += opSell - opBuy
 	}
 
+	report.Amounts = core.Amounts{
+		TotalBuy:  totalBuyAmount,
+		TotalSell: totalSellAmount,
+	}
+	report.Tax = gtb * 0.1
+
 	postProcessOpenPositions(report, year)
 
 	dm := summarizeDividends(dividends)
+	report.Dividends = dm
 
-	logrus.Info("Total BUY amount: ", totalBuyAmount)
-	logrus.Info("Total SELL amount: ", totalSellAmount)
-	logrus.Info("Total TAX: ", gtb*0.1)
-
-	logrus.Infoln("")
-	// TODO
-	logrus.Info("Dividends GROSS amount: ", dm.GrossAmount)
-	logrus.Info("Dividends NET amount: ", dm.NetAmount)
-	logrus.Info("Dividends TAX amount: ", dm.Tax)
-
-	logrus.Infoln("")
-	printOpenPositions(report.OpenPositions)
-
-	return gtb * 0.1, nil
-}
-
-func printOpenPositions(op []*core.OpenPosition) {
-	logrus.Info("Open positions:")
-	for i := range op {
-		logrus.Printf(
-			"Date: %v, Token: %s, Name: %s, Avg Foreign price: %f, Avg Home price: %f, Units: %f",
-			op[i].Date, op[i].Token, op[i].Name, op[i].AmountOrigin, op[i].AmountHome, op[i].Units,
-		)
-	}
+	return nil
 }
 
 func postProcessOpenPositions(report *core.Report, year int) {

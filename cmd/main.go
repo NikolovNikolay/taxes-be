@@ -5,7 +5,6 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/caarlos0/env"
 	sdformatter "github.com/joonix/log"
 	"github.com/labstack/echo"
@@ -17,8 +16,10 @@ import (
 	"os"
 	"taxes-be/internal/atleastonce"
 	"taxes-be/internal/atleastonce/atleastoncedao"
+	aws2 "taxes-be/internal/aws"
 	"taxes-be/internal/cron"
 	"taxes-be/internal/inquiries/inquiriesdao"
+	"taxes-be/internal/sendgrid"
 	"taxes-be/internal/statements"
 	"taxes-be/internal/statements/statementsview"
 	"taxes-be/utils/echoaddons"
@@ -30,9 +31,11 @@ type Config struct {
 	FacebookKey string
 	LogLevel    string `env:"LOG_LEVEL" envDefault:"debug"`
 
-	DB               string `env:"DB_CONNECT_STRING" envDefault:"user=postgres password=password dbname=postgres sslmode=disable""` // nolint:lll // let it stay on one line
+	DB               string `env:"DB_CONNECT_STRING" envDefault:"user=postgres password=password dbname=postgres sslmode=disable"` // nolint:lll // let it stay on one line
 	UseInternalTimer bool   `env:"USE_INTERNAL_TIMER" envDefault:"true"`
 	AloLimit         int    `env:"ALO_LIMIT" envDefault:"15"`
+
+	SendgridAPIKey string `env:"SENDGRID_API_KEY" envDefault:""`
 
 	AWSRegion              string `env:"AWS_REGION" envDefault:"eu-west-1"`
 	AWSAccessKey           string `env:"AWS_ACCESS_KEY" envDefault:""`
@@ -74,9 +77,10 @@ func main() {
 	defer aloDoer.Close()
 
 	awsSession := connectAws(cfg)
-	s3 := s3.New(awsSession)
+	s3Manager := aws2.NewS3Manager(awsSession)
+	mailer := sendgrid.NewMailer(cfg.SendgridAPIKey)
 
-	statements.NewStatementManager(*aloDoer, s3, cfg.S3StatementsBucketName)
+	statements.NewStatementManager(*aloDoer, s3Manager, cfg.S3StatementsBucketName, mailer)
 
 	e := echo.New()
 	e.Validator = echoaddons.NewValidator()
@@ -85,7 +89,7 @@ func main() {
 
 	statementsview.RegisterStatementsEndpoints(
 		e.Group("/api/statements"),
-		awsSession,
+		s3Manager,
 		cfg.S3StatementsBucketName,
 		inquiryStore,
 		aloStore,

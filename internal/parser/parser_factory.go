@@ -2,11 +2,11 @@ package parser
 
 import (
 	"fmt"
-	"taxes-be/internal/reader"
+	"taxes-be/internal/core"
 )
 
 type Factory interface {
-	Build(t reader.StatementType) (Parser, error)
+	Build(t core.StatementType) (Parser, error)
 }
 
 type parserFactory struct{}
@@ -15,11 +15,11 @@ func NewParserFactory() Factory {
 	return &parserFactory{}
 }
 
-func (f *parserFactory) Build(t reader.StatementType) (Parser, error) {
+func (f *parserFactory) Build(t core.StatementType) (Parser, error) {
 	switch t {
-	case reader.Revolut:
+	case core.Revolut:
 		return newRevolutStatementParser(), nil
-	case reader.EToro:
+	case core.EToro:
 		return newEToroStatementParserLinked(), nil
 	default:
 		return nil, fmt.Errorf("unknown statement type")

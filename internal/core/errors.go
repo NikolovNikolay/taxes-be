@@ -2,7 +2,6 @@ package core
 
 import (
 	"context"
-	"fmt"
 )
 
 type validationError struct {
@@ -38,10 +37,6 @@ func CtxAware(ctx context.Context, err error) error {
 
 type errNotFound struct {
 	error
-}
-
-func (nf *errNotFound) Error() string {
-	return fmt.Sprintf("not found: %v", nf)
 }
 
 func ErrNotFound(err error) error {

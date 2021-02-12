@@ -182,17 +182,3 @@ func parseFloat(l string) (float64, error) {
 	f, err := strconv.ParseFloat(l, 32)
 	return f, err
 }
-
-func isPeriodLine(l string) bool {
-	months := []string{
-		core.Jan, core.Feb, core.Mar, core.Apr, core.May, core.Jun,
-		core.Jul, core.Aug, core.Sep, core.Oct, core.Nov, core.Dec,
-	}
-
-	for i := range months {
-		if strings.Contains(l, months[i]) {
-			return true
-		}
-	}
-	return false
-}

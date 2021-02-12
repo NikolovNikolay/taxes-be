@@ -2,36 +2,54 @@ package statements
 
 import (
 	"context"
-	"fmt"
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/service/s3"
-	"github.com/aws/aws-sdk-go/service/s3/s3manager"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
+	"os"
 	"strings"
 	"taxes-be/internal/atleastonce"
+	awsutil "taxes-be/internal/aws"
 	"taxes-be/internal/inquiries/inquiriesdao"
-	"taxes-be/internal/models"
+	"taxes-be/internal/sendgrid"
 )
 
 const processStatementKey = "process_statement"
 
+//const (
+//	pdf                 = "pdf"
+//	xlsx                = "xlsx"
+//	xls                 = "xls"
+//	processStatementKey = "process_statement"
+//)
+//
+//var (
+//	excelReader      = reader.NewExcelReader()
+//	pdfReader        = reader.NewPDFReader()
+//	supportedFormats = map[string]reader.Reader{
+//		pdf:  pdfReader,
+//		xlsx: excelReader,
+//		xls:  excelReader,
+//	}
+//)
+
 type StatementManager struct {
 	inquiryStore inquiriesdao.Store
-	s3           *s3.S3
+	s3Manager    *awsutil.S3Manager
 	alo          atleastonce.Doer
 	s3BucketName string
+	mailer       *sendgrid.Mailer
 }
 
 func NewStatementManager(
 	alo atleastonce.Doer,
-	s3 *s3.S3,
+	s3Manager *awsutil.S3Manager,
 	s3BucketName string,
+	mailer *sendgrid.Mailer,
 ) *StatementManager {
 	sm := &StatementManager{
 		alo:          alo,
 		s3BucketName: s3BucketName,
-		s3:           s3,
+		s3Manager:    s3Manager,
+		mailer:       mailer,
 	}
 	alo.RegisterHandler(processStatementKey, sm.handleProcessStatement)
 	return sm
@@ -43,14 +61,28 @@ func (sm *StatementManager) handleProcessStatement(ctx context.Context, uuid uui
 		return nil
 	}
 
-	// TODO: init statements processing logic
-
 	fn := strings.Split(inq.Files, ",")
+	rp := NewReportProcessor(2020, inq.ID)
+
 	for i := range fn {
-		logrus.Info(fmt.Sprintf("processing file: %s", fn[i]))
+		err = sm.handleSingleFile(fn[i], inq.Type, rp)
+		if err != nil {
+			return err
+		}
+		logrus.Info("done")
 	}
 
-	err = sm.deleteFromS3(inq)
+	err = rp.CalculateTaxes()
+	if err != nil {
+		return err
+	}
+
+	err = sm.mailer.SendReportMail(2020, "Nikolay Nikolov", "nikolayvnikolov@protonmail.com", rp.report)
+	if err != nil {
+		return err
+	}
+
+	err = sm.s3Manager.BatchDelete(sm.s3BucketName, inq.Prefix)
 	if err != nil {
 		return err
 	}
@@ -58,16 +90,21 @@ func (sm *StatementManager) handleProcessStatement(ctx context.Context, uuid uui
 	return nil
 }
 
-func (sm *StatementManager) deleteFromS3(inq *models.Inquiry) error {
-	iter := s3manager.NewDeleteListIterator(sm.s3, &s3.ListObjectsInput{
-		Prefix: &inq.Prefix,
-		Bucket: aws.String(sm.s3BucketName),
-	})
-
-	err := s3manager.NewBatchDeleteWithClient(sm.s3).Delete(aws.BackgroundContext(), iter)
+func (sm *StatementManager) handleSingleFile(
+	fileName string,
+	sType int,
+	rp *ReportProcessor,
+) error {
+	_, err := sm.s3Manager.DownloadFile(sm.s3BucketName, fileName)
 	if err != nil {
 		return err
 	}
 
+	err = rp.ParseLines(fileName, sType)
+	if err != nil {
+		return err
+	}
+
+	_ = os.Remove(fileName)
 	return nil
 }

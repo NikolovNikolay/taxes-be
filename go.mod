@@ -25,6 +25,7 @@ require (
 	github.com/sendgrid/sendgrid-go v3.8.0+incompatible
 	github.com/sirupsen/logrus v1.7.0
 	github.com/valyala/fasttemplate v1.2.1 // indirect
+	github.com/volatiletech/null/v8 v8.1.0
 	github.com/volatiletech/sqlboiler/v4 v4.4.0
 	github.com/volatiletech/strmangle v0.0.1
 	go.opencensus.io v0.22.4

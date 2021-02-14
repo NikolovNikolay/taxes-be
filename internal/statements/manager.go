@@ -14,23 +14,6 @@ import (
 
 const processStatementKey = "process_statement"
 
-//const (
-//	pdf                 = "pdf"
-//	xlsx                = "xlsx"
-//	xls                 = "xls"
-//	processStatementKey = "process_statement"
-//)
-//
-//var (
-//	excelReader      = reader.NewExcelReader()
-//	pdfReader        = reader.NewPDFReader()
-//	supportedFormats = map[string]reader.Reader{
-//		pdf:  pdfReader,
-//		xlsx: excelReader,
-//		xls:  excelReader,
-//	}
-//)
-
 type StatementManager struct {
 	inquiryStore inquiriesdao.Store
 	s3Manager    *awsutil.S3Manager
@@ -62,7 +45,7 @@ func (sm *StatementManager) handleProcessStatement(ctx context.Context, uuid uui
 	}
 
 	fn := strings.Split(inq.Files, ",")
-	rp := NewReportProcessor(2020, inq.ID)
+	rp := NewReportProcessor(inq.Year, inq.ID)
 
 	for i := range fn {
 		err = sm.handleSingleFile(fn[i], inq.Type, rp)
@@ -77,7 +60,7 @@ func (sm *StatementManager) handleProcessStatement(ctx context.Context, uuid uui
 		return err
 	}
 
-	err = sm.mailer.SendReportMail(2020, "Nikolay Nikolov", "nikolayvnikolov@protonmail.com", rp.report)
+	err = sm.mailer.SendReportMail(inq.Year, inq.FullName.String, inq.Email.String, rp.report)
 	if err != nil {
 		return err
 	}

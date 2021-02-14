@@ -101,12 +101,12 @@ func (p *revolutStatementParser) Parse(lines []string) (*core.Report, error) {
 					a.Type = at
 					currentCol++
 
-					if at == core.CDEP || at == core.CSD {
+					if at == core.Cdep || at == core.Csd {
 						isSkipCol = true
 					}
 					continue
 				case 5:
-					if a.Type != core.CDEP && a.Type != core.CSD {
+					if a.Type != core.Cdep && a.Type != core.Csd {
 						s := strings.Split(l, " ")
 						a.Token = s[0]
 					}
@@ -131,9 +131,9 @@ func (p *revolutStatementParser) Parse(lines []string) (*core.Report, error) {
 					if err != nil {
 						return nil, err
 					}
-					if a.Type == core.BUY {
+					if a.Type == core.Buy {
 						a.OpenRate = price
-					} else if a.Type == core.SELL {
+					} else if a.Type == core.Sell {
 						a.ClosedRate = price
 					}
 					currentCol++

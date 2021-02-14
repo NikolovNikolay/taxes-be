@@ -36,12 +36,12 @@ func (c revolutTaxCalculator) CalculateYear(report *core.Report, year int) error
 			continue
 		}
 
-		r := c.es.GetRateForDate(a.Date, core.BGN)
-		if a.Type == core.BUY {
+		r := c.es.GetRateForDate(a.Date, core.Bgn)
+		if a.Type == core.Buy {
 			totalBuyAmount += a.Amount * r
-		} else if a.Type == core.SELL {
+		} else if a.Type == core.Sell {
 			totalSellAmount += a.Amount * r
-		} else if a.Type == core.DIV || a.Type == core.DIVNRA {
+		} else if a.Type == core.Div || a.Type == core.DivNra {
 			addToDividends(dividends, a, r)
 			continue
 		}
@@ -69,9 +69,9 @@ func addToDividends(d map[int64]map[string]*core.Dividend, a core.LinkedActivity
 		d[t][a.Token] = &core.Dividend{}
 	}
 
-	if a.Type == core.DIV || a.Type == core.ROLLOVER_FEE {
+	if a.Type == core.Div || a.Type == core.RolloverFee {
 		d[t][a.Token].Gross = rate * a.Amount
-	} else if a.Type == core.DIVNRA {
+	} else if a.Type == core.DivNra {
 		d[t][a.Token].Tax = rate * a.Amount
 	}
 

@@ -6,7 +6,9 @@ import (
 	"github.com/google/uuid"
 	"github.com/labstack/echo"
 	"github.com/sirupsen/logrus"
+	"github.com/volatiletech/null/v8"
 	"net/http"
+	"strconv"
 	"strings"
 	"taxes-be/internal/atleastonce"
 	awsutil "taxes-be/internal/aws"
@@ -61,13 +63,41 @@ func (ep *UploadFilesEndpoint) ServeHTTP(c echo.Context) error {
 
 	mf := req.MultipartForm
 	files := mf.File["statements"]
-	sType := req.FormValue("type")
+	sType := strings.Trim(req.FormValue("type"), " ")
+	sYear := strings.Trim(req.FormValue("year"), " ")
+	sEmail := strings.Trim(req.FormValue("email"), " ")
+	sFullName := strings.Trim(req.FormValue("fullName"), " ")
+
+	if sFullName == "" {
+		return core.CtxAware(req.Context(), &echo.HTTPError{
+			Code:     http.StatusBadRequest,
+			Message:  "missing full name",
+			Internal: fmt.Errorf("missing full name"),
+		})
+	}
 
 	if len(files) == 0 {
 		return core.CtxAware(req.Context(), &echo.HTTPError{
 			Code:     http.StatusBadRequest,
 			Message:  "no attached statements",
 			Internal: fmt.Errorf("no attached statements"),
+		})
+	}
+
+	if sEmail == "" {
+		return core.CtxAware(req.Context(), &echo.HTTPError{
+			Code:     http.StatusBadRequest,
+			Message:  "missing email",
+			Internal: fmt.Errorf("missing email"),
+		})
+	}
+
+	year, err := strconv.Atoi(sYear)
+	if err != nil {
+		return core.CtxAware(req.Context(), &echo.HTTPError{
+			Code:     http.StatusBadRequest,
+			Message:  "invalid year: " + sYear,
+			Internal: fmt.Errorf("invalid year: " + sYear),
 		})
 	}
 
@@ -97,6 +127,8 @@ func (ep *UploadFilesEndpoint) ServeHTTP(c echo.Context) error {
 		err = ep.s3Manager.UploadMultipartFile(ep.bucketName, "bucket-owner-full-control", fileName, file)
 		if err != nil {
 			logrus.Errorf("could not upload files: %v", err)
+
+			_ = ep.s3Manager.BatchDelete(ep.bucketName, prefix)
 			return core.CtxAware(req.Context(), &echo.HTTPError{
 				Code:    http.StatusInternalServerError,
 				Message: "could not process statements",
@@ -104,17 +136,20 @@ func (ep *UploadFilesEndpoint) ServeHTTP(c echo.Context) error {
 		}
 
 		allFileNames = append(allFileNames, fileName)
-		file.Close()
+		_ = file.Close()
 	}
 
 	inquiryID := uuid.New()
 	err = ep.inquiryStore.InTransaction(req.Context(), func(ctx context.Context) error {
 		err = ep.inquiryStore.AddInquiry(ctx, &models.Inquiry{
-			ID:     inquiryID.String(),
-			UserID: uuid.New().String(), // TODO: use real ID
-			Prefix: prefix,
-			Files:  strings.Join(allFileNames, ","),
-			Type:   int(mapType(sType)),
+			ID:       inquiryID.String(),
+			UserID:   uuid.New().String(), // TODO: use real ID
+			Prefix:   prefix,
+			Files:    strings.Join(allFileNames, ","),
+			Type:     int(mapType(sType)),
+			Year:     year,
+			Email:    null.StringFrom(sEmail),
+			FullName: null.StringFrom(sFullName),
 		})
 
 		if err != nil {

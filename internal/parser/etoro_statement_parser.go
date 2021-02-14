@@ -131,13 +131,13 @@ func (p *eToroStatementParserLinked) Parse(lines []string) (*core.Report, error)
 				dividentActivity.Date = d
 
 			} else if currentIndex == 3 {
-				if strings.Trim(l, " ") == string(core.ROLLOVER_FEE) {
-					dividentActivity.Type = core.ROLLOVER_FEE
+				if strings.Trim(l, " ") == string(core.RolloverFee) {
+					dividentActivity.Type = core.RolloverFee
 				}
 			} else if currentIndex == 4 {
-				if dividentActivity != nil && dividentActivity.Type == core.ROLLOVER_FEE {
+				if dividentActivity != nil && dividentActivity.Type == core.RolloverFee {
 					if strings.Trim(l, " ") != "Payment caused by dividend" {
-						logrus.Info("Expected dividend but got: ", l)
+						logrus.Warn("Expected dividend but got: ", l)
 						dividentActivity = nil
 					}
 				} else {
@@ -154,7 +154,7 @@ func (p *eToroStatementParserLinked) Parse(lines []string) (*core.Report, error)
 					return nil, err
 				}
 				dividentActivity.Amount = am
-				if dividentActivity.Type == core.ROLLOVER_FEE {
+				if dividentActivity.Type == core.RolloverFee {
 					dividentActivity.Token = fmt.Sprintf("%f_%d", dividentActivity.Amount, dividentActivity.Date.Unix())
 					report.Activities = append(report.Activities, *dividentActivity)
 				}
@@ -187,8 +187,8 @@ func (p *eToroStatementParserLinked) Parse(lines []string) (*core.Report, error)
 			}
 			a.Units = units
 
-			a.Type = core.LINKED
-			a.Currency = core.USD
+			a.Type = core.Linked
+			a.Currency = core.Usd
 
 			or, err := parseEТoroFloat(v[5])
 			if err != nil {

@@ -34,6 +34,7 @@ type Config struct {
 	DB               string `env:"DB_CONNECT_STRING" envDefault:"user=postgres password=password dbname=postgres sslmode=disable"` // nolint:lll // let it stay on one line
 	UseInternalTimer bool   `env:"USE_INTERNAL_TIMER" envDefault:"true"`
 	AloLimit         int    `env:"ALO_LIMIT" envDefault:"15"`
+	ServerAddress    string `env:"SERVER_ADDRESS" envDefault:":8080"`
 
 	SendgridAPIKey string `env:"SENDGRID_API_KEY" envDefault:""`
 
@@ -103,7 +104,7 @@ func main() {
 	}
 
 	srv := &http.Server{
-		Addr:              ":8080",
+		Addr:              cfg.ServerAddress,
 		ReadTimeout:       15 * time.Second,
 		ReadHeaderTimeout: 10 * time.Second,
 		WriteTimeout:      10 * time.Second,

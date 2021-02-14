@@ -140,6 +140,8 @@ github.com/gocql/gocql
 github.com/gocql/gocql/internal/lru
 github.com/gocql/gocql/internal/murmur
 github.com/gocql/gocql/internal/streams
+# github.com/gofrs/uuid v3.2.0+incompatible
+github.com/gofrs/uuid
 # github.com/golang-migrate/migrate/v4 v4.14.1
 ## explicit
 github.com/golang-migrate/migrate/v4
@@ -395,6 +397,12 @@ github.com/valyala/bytebufferpool
 github.com/valyala/fasttemplate
 # github.com/volatiletech/inflect v0.0.1
 github.com/volatiletech/inflect
+# github.com/volatiletech/null/v8 v8.1.0
+## explicit
+github.com/volatiletech/null/v8
+github.com/volatiletech/null/v8/convert
+# github.com/volatiletech/randomize v0.0.1
+github.com/volatiletech/randomize
 # github.com/volatiletech/sqlboiler/v4 v4.4.0
 ## explicit
 github.com/volatiletech/sqlboiler/v4

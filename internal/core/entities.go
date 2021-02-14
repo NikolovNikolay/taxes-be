@@ -7,24 +7,24 @@ import (
 type ActivityType string
 
 const (
-	BUY          ActivityType = "BUY"
-	SELL         ActivityType = "SELL"
-	CSD          ActivityType = "CSD"
-	DIV          ActivityType = "DIV"
-	DIVNRA       ActivityType = "DIVNRA"
-	SSP          ActivityType = "SSP"
-	DIVFT        ActivityType = "DIVFT"
-	MAS          ActivityType = "MAS"
-	CDEP         ActivityType = "CDEP"
-	LINKED       ActivityType = "LINKED"
-	ROLLOVER_FEE ActivityType = "Rollover Fee"
+	Buy         ActivityType = "BUY"
+	Sell        ActivityType = "SELL"
+	Csd         ActivityType = "CSD"
+	Div         ActivityType = "DIV"
+	DivNra      ActivityType = "DIVNRA"
+	Ssp         ActivityType = "SSP"
+	FivFt       ActivityType = "DIVFT"
+	Mas         ActivityType = "MAS"
+	Cdep        ActivityType = "CDEP"
+	Linked      ActivityType = "LINKED"
+	RolloverFee ActivityType = "Rollover Fee"
 )
 
 type Currency string
 
 const (
-	USD Currency = "USD"
-	BGN Currency = "BGN"
+	Usd Currency = "USD"
+	Bgn Currency = "BGN"
 )
 
 const (
@@ -92,20 +92,3 @@ type Dividend struct {
 	Tax        float64
 	TaxPercent float64
 }
-
-type Month string
-
-const (
-	Jan = "January"
-	Feb = "February"
-	Mar = "March"
-	Apr = "April"
-	May = "May"
-	Jun = "Jun"
-	Jul = "Jul"
-	Aug = "August"
-	Sep = "September"
-	Oct = "October"
-	Nov = "November"
-	Dec = "December"
-)

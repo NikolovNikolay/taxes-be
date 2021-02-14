@@ -1,3 +1,4 @@
+CREATE EXTENSION pgcrypto;
 CREATE TABLE IF NOT EXISTS at_least_once_tasks
 (
     key  varchar(255),

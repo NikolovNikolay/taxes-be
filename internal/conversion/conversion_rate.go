@@ -54,7 +54,7 @@ func (s *ExchangeRateService) getExchangeRates() {
 		apiURL,
 		s.start,
 		s.end,
-		core.USD,
+		core.Usd,
 	)
 	res, err := http.Get(url)
 

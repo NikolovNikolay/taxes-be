@@ -29,7 +29,6 @@ sqlboiler:
 test:
 	ginkgo -r -tags=integration --trace --race
 
-
 migrate:
 	migrate -verbose -path ./migrations -database postgres://postgres:password@localhost:5432/postgres?sslmode=disable up
 
@@ -38,3 +37,10 @@ migrate-down:
 
 migrate-down-single:
 	migrate -verbose -path ./migrations -database postgres://postgres:password@localhost:5432/postgres?sslmode=disable down 1
+
+migrate-rds:
+	migrate -verbose -path ./migrations -database postgres://postgres:mNbJlZhJi25A@taxes-be-db.cetvbha8jhrc.eu-west-1.rds.amazonaws.com:5432/postgres?sslmode=disable up
+
+prepare-artifact:
+	GOARCH=amd64 GOOS=linux go build -o bin/application cmd/main.go
+	zip -r artifact.zip bin .platform

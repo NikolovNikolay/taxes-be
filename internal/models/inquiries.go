@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/friendsofgo/errors"
+	"github.com/volatiletech/null/v8"
 	"github.com/volatiletech/sqlboiler/v4/boil"
 	"github.com/volatiletech/sqlboiler/v4/queries"
 	"github.com/volatiletech/sqlboiler/v4/queries/qm"
@@ -23,12 +24,15 @@ import (
 
 // Inquiry is an object representing the database table.
 type Inquiry struct {
-	ID        string    `boil:"id" json:"id" toml:"id" yaml:"id"`
-	UserID    string    `boil:"user_id" json:"user_id" toml:"user_id" yaml:"user_id"`
-	Files     string    `boil:"files" json:"files" toml:"files" yaml:"files"`
-	Type      int       `boil:"type" json:"type" toml:"type" yaml:"type"`
-	Prefix    string    `boil:"prefix" json:"prefix" toml:"prefix" yaml:"prefix"`
-	CreatedAt time.Time `boil:"created_at" json:"created_at" toml:"created_at" yaml:"created_at"`
+	ID        string      `boil:"id" json:"id" toml:"id" yaml:"id"`
+	UserID    string      `boil:"user_id" json:"user_id" toml:"user_id" yaml:"user_id"`
+	Files     string      `boil:"files" json:"files" toml:"files" yaml:"files"`
+	Type      int         `boil:"type" json:"type" toml:"type" yaml:"type"`
+	Year      int         `boil:"year" json:"year" toml:"year" yaml:"year"`
+	Prefix    string      `boil:"prefix" json:"prefix" toml:"prefix" yaml:"prefix"`
+	CreatedAt time.Time   `boil:"created_at" json:"created_at" toml:"created_at" yaml:"created_at"`
+	Email     null.String `boil:"email" json:"email,omitempty" toml:"email" yaml:"email,omitempty"`
+	FullName  null.String `boil:"full_name" json:"full_name,omitempty" toml:"full_name" yaml:"full_name,omitempty"`
 
 	R *inquiryR `boil:"-" json:"-" toml:"-" yaml:"-"`
 	L inquiryL  `boil:"-" json:"-" toml:"-" yaml:"-"`
@@ -39,15 +43,21 @@ var InquiryColumns = struct {
 	UserID    string
 	Files     string
 	Type      string
+	Year      string
 	Prefix    string
 	CreatedAt string
+	Email     string
+	FullName  string
 }{
 	ID:        "id",
 	UserID:    "user_id",
 	Files:     "files",
 	Type:      "type",
+	Year:      "year",
 	Prefix:    "prefix",
 	CreatedAt: "created_at",
+	Email:     "email",
+	FullName:  "full_name",
 }
 
 // Generated where
@@ -75,20 +85,49 @@ func (w whereHelperint) NIN(slice []int) qm.QueryMod {
 	return qm.WhereNotIn(fmt.Sprintf("%s NOT IN ?", w.field), values...)
 }
 
+type whereHelpernull_String struct{ field string }
+
+func (w whereHelpernull_String) EQ(x null.String) qm.QueryMod {
+	return qmhelper.WhereNullEQ(w.field, false, x)
+}
+func (w whereHelpernull_String) NEQ(x null.String) qm.QueryMod {
+	return qmhelper.WhereNullEQ(w.field, true, x)
+}
+func (w whereHelpernull_String) IsNull() qm.QueryMod    { return qmhelper.WhereIsNull(w.field) }
+func (w whereHelpernull_String) IsNotNull() qm.QueryMod { return qmhelper.WhereIsNotNull(w.field) }
+func (w whereHelpernull_String) LT(x null.String) qm.QueryMod {
+	return qmhelper.Where(w.field, qmhelper.LT, x)
+}
+func (w whereHelpernull_String) LTE(x null.String) qm.QueryMod {
+	return qmhelper.Where(w.field, qmhelper.LTE, x)
+}
+func (w whereHelpernull_String) GT(x null.String) qm.QueryMod {
+	return qmhelper.Where(w.field, qmhelper.GT, x)
+}
+func (w whereHelpernull_String) GTE(x null.String) qm.QueryMod {
+	return qmhelper.Where(w.field, qmhelper.GTE, x)
+}
+
 var InquiryWhere = struct {
 	ID        whereHelperstring
 	UserID    whereHelperstring
 	Files     whereHelperstring
 	Type      whereHelperint
+	Year      whereHelperint
 	Prefix    whereHelperstring
 	CreatedAt whereHelpertime_Time
+	Email     whereHelpernull_String
+	FullName  whereHelpernull_String
 }{
 	ID:        whereHelperstring{field: "\"inquiries\".\"id\""},
 	UserID:    whereHelperstring{field: "\"inquiries\".\"user_id\""},
 	Files:     whereHelperstring{field: "\"inquiries\".\"files\""},
 	Type:      whereHelperint{field: "\"inquiries\".\"type\""},
+	Year:      whereHelperint{field: "\"inquiries\".\"year\""},
 	Prefix:    whereHelperstring{field: "\"inquiries\".\"prefix\""},
 	CreatedAt: whereHelpertime_Time{field: "\"inquiries\".\"created_at\""},
+	Email:     whereHelpernull_String{field: "\"inquiries\".\"email\""},
+	FullName:  whereHelpernull_String{field: "\"inquiries\".\"full_name\""},
 }
 
 // InquiryRels is where relationship names are stored.
@@ -108,8 +147,8 @@ func (*inquiryR) NewStruct() *inquiryR {
 type inquiryL struct{}
 
 var (
-	inquiryAllColumns            = []string{"id", "user_id", "files", "type", "prefix", "created_at"}
-	inquiryColumnsWithoutDefault = []string{"user_id", "files", "type", "prefix"}
+	inquiryAllColumns            = []string{"id", "user_id", "files", "type", "year", "prefix", "created_at", "email", "full_name"}
+	inquiryColumnsWithoutDefault = []string{"user_id", "files", "type", "year", "prefix", "email", "full_name"}
 	inquiryColumnsWithDefault    = []string{"id", "created_at"}
 	inquiryPrimaryKeyColumns     = []string{"id"}
 )

@@ -11,8 +11,8 @@ import (
 )
 
 const (
-	fromName    = "Nikolay from Clerky"
-	fromAddress = "nikolov89@gmail.com"
+	fromName    = "Nikolay from Digitools-it"
+	fromAddress = "nikolov@digitools-it.com"
 	subject     = "Annual tax calculations for %d"
 )
 
@@ -32,20 +32,19 @@ func (m *Mailer) SendReportMail(year int, toFullName, toEmail string, report *co
 	to := mail.NewEmail(toFullName, toEmail)
 	p := message.NewPrinter(language.Bulgarian)
 	plainTextContent := fmt.Sprintf(
-		`Hi there,
+		`Hi %s,
 
-Here are the results for the tax calculations you requested 
-for ID %s (%d):
+Here are the results of the tax calculations you requested with inquiry ID %s (%d):
 
 ----------------------------------------
-Operations:
+Operations (BGN):
 ----------------------------------------
 Total sell amount: %s
 Total buy amount:  %s
 Total tax:         %s
 
 ----------------------------------------
-Dividents:
+Dividends (BGN):
 ----------------------------------------
 Net amount:   %s
 Gross amount: %s
@@ -58,14 +57,15 @@ Transferred positions %d (%d):
 
 Regards,
 Nikolay`,
+		toFullName,
 		report.RequestID,
 		year,
-		p.Sprint(report.Amounts.TotalSell),
-		p.Sprint(report.Amounts.TotalBuy),
-		p.Sprint(report.Tax),
-		p.Sprint(report.Dividends.NetAmount),
-		p.Sprint(report.Dividends.GrossAmount),
-		p.Sprint(report.Dividends.Tax),
+		p.Sprintf("%.2f", report.Amounts.TotalSell),
+		p.Sprintf("%.2f", report.Amounts.TotalBuy),
+		p.Sprintf("%.2f", report.Tax),
+		p.Sprintf("%.2f", report.Dividends.NetAmount),
+		p.Sprintf("%.2f", report.Dividends.GrossAmount),
+		p.Sprintf("%.2f", report.Dividends.Tax),
 		year,
 		len(report.OpenPositions),
 		buildOpenPositions(report.OpenPositions, p),
@@ -88,16 +88,16 @@ func buildOpenPositions(op []*core.OpenPosition, p *message.Printer) string {
 	positions := ""
 	for i := range op {
 		positions += fmt.Sprintf(
-			`%d | Date: %v, Token: %s, Name: %s, Avg Foreign price: %s, Avg Home price: %s, Units: %s
+			`%d | Date: %v | Token: %s | Name: %s | Avg price (USD): %s | Avg price (BGN): %s | Units: %s |
 ---------------------
 `,
 			i+1,
 			op[i].Date.Format("02-01-2006"),
 			op[i].Token,
 			op[i].Name,
-			p.Sprint(op[i].AmountOrigin),
-			p.Sprint(op[i].AmountHome),
-			p.Sprint(op[i].Units),
+			p.Sprintf("%.2f", op[i].AmountOrigin),
+			p.Sprintf("%.2f", op[i].AmountHome),
+			p.Sprintf("%.5f", op[i].Units),
 		)
 	}
 	return positions

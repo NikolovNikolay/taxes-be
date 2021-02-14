@@ -25,14 +25,14 @@ func (c etoroTaxCalculator) CalculateYear(report *core.Report, year int) error {
 
 	for _, a := range report.Activities {
 
-		if a.Type == core.ROLLOVER_FEE {
-			r := c.es.GetRateForDate(a.Date, core.BGN)
+		if a.Type == core.RolloverFee {
+			r := c.es.GetRateForDate(a.Date, core.Bgn)
 			addToDividends(dividends, a, r)
 			continue
 		}
 
-		or := c.es.GetRateForDate(a.OpenDate, core.BGN)
-		cr := c.es.GetRateForDate(a.ClosedDate, core.BGN)
+		or := c.es.GetRateForDate(a.OpenDate, core.Bgn)
+		cr := c.es.GetRateForDate(a.ClosedDate, core.Bgn)
 
 		if a.OpenDate.Year() == year && a.ClosedDate.Year() == year+1 {
 			op := &core.OpenPosition{

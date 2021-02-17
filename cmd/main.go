@@ -11,14 +11,17 @@ import (
 	"github.com/labstack/echo/middleware"
 	_ "github.com/lib/pq"
 	"github.com/sirupsen/logrus"
+	"github.com/stripe/stripe-go/v71"
 	"net/http"
 	_ "net/http/pprof"
 	"os"
 	"taxes-be/internal/atleastonce"
 	"taxes-be/internal/atleastonce/atleastoncedao"
 	aws2 "taxes-be/internal/aws"
+	"taxes-be/internal/coupons/couponsdao"
 	"taxes-be/internal/cron"
 	"taxes-be/internal/inquiries/inquiriesdao"
+	"taxes-be/internal/payments/paymentsview"
 	"taxes-be/internal/sendgrid"
 	"taxes-be/internal/statements"
 	"taxes-be/internal/statements/statementsview"
@@ -35,8 +38,10 @@ type Config struct {
 	UseInternalTimer bool   `env:"USE_INTERNAL_TIMER" envDefault:"true"`
 	AloLimit         int    `env:"ALO_LIMIT" envDefault:"15"`
 	ServerAddress    string `env:"SERVER_ADDRESS" envDefault:":8080"`
+	WebsiteBaseURL   string `env:"WEBSITE_BASE_URL" envDefault:"http://localhost:3000/#"`
 
 	SendgridAPIKey string `env:"SENDGRID_API_KEY" envDefault:""`
+	StripeAPIKey   string `env:"STRIPE_API_KEY" envDefault:""`
 
 	AWSRegion              string `env:"AWS_REGION" envDefault:"eu-west-1"`
 	AWSAccessKey           string `env:"AWS_ACCESS_KEY" envDefault:""`
@@ -65,6 +70,8 @@ func main() {
 		logrus.WithError(err).Fatalln("failed to parse log level from cfg")
 	}
 
+	stripe.Key = cfg.StripeAPIKey
+
 	db := openConnection(cfg.DB)
 	defer func() {
 		_ = db.Close()
@@ -72,6 +79,7 @@ func main() {
 	logrus.Debug("connected to DB")
 
 	inquiryStore := inquiriesdao.NewStore(db)
+	couponStore := couponsdao.NewStore(db)
 
 	aloStore := atleastoncedao.NewStore(db)
 	aloDoer := atleastonce.New(aloStore)
@@ -81,7 +89,14 @@ func main() {
 	s3Manager := aws2.NewS3Manager(awsSession)
 	mailer := sendgrid.NewMailer(cfg.SendgridAPIKey)
 
-	statements.NewStatementManager(*aloDoer, s3Manager, cfg.S3StatementsBucketName, mailer)
+	statements.NewStatementManager(
+		*aloDoer,
+		s3Manager,
+		cfg.S3StatementsBucketName,
+		mailer,
+		inquiryStore,
+		couponStore,
+	)
 
 	e := echo.New()
 	e.Validator = echoaddons.NewValidator()
@@ -93,7 +108,15 @@ func main() {
 		s3Manager,
 		cfg.S3StatementsBucketName,
 		inquiryStore,
+		couponStore,
 		aloStore,
+	)
+
+	paymentsview.RegisterEndpoints(
+		e.Group("/api/payments"),
+		cfg.WebsiteBaseURL,
+		couponStore,
+		inquiryStore,
 	)
 
 	http.Handle("/", e)

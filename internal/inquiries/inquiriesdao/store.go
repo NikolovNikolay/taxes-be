@@ -44,9 +44,11 @@ func (s *Store) FindInquiry(ctx context.Context, id uuid.UUID) (*models.Inquiry,
 	return inquiry, nil
 }
 
-func (s *Store) AddInquiry(ctx context.Context, inquiry *models.Inquiry) error {
+func (s *Store) UpsertInquiry(ctx context.Context, inquiry *models.Inquiry) error {
 	err := daoutil.EnsureTransaction(ctx, s.db, func(tx *sql.Tx) error {
-		err := inquiry.Insert(ctx, tx, boil.Infer())
+		err := inquiry.Upsert(ctx, tx, true, []string{
+			models.CouponColumns.ID,
+		}, boil.Infer(), boil.Infer())
 		if err != nil {
 			return err
 		}

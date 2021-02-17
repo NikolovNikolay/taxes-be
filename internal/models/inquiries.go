@@ -14,7 +14,6 @@ import (
 	"time"
 
 	"github.com/friendsofgo/errors"
-	"github.com/volatiletech/null/v8"
 	"github.com/volatiletech/sqlboiler/v4/boil"
 	"github.com/volatiletech/sqlboiler/v4/queries"
 	"github.com/volatiletech/sqlboiler/v4/queries/qm"
@@ -24,110 +23,74 @@ import (
 
 // Inquiry is an object representing the database table.
 type Inquiry struct {
-	ID        string      `boil:"id" json:"id" toml:"id" yaml:"id"`
-	UserID    string      `boil:"user_id" json:"user_id" toml:"user_id" yaml:"user_id"`
-	Files     string      `boil:"files" json:"files" toml:"files" yaml:"files"`
-	Type      int         `boil:"type" json:"type" toml:"type" yaml:"type"`
-	Year      int         `boil:"year" json:"year" toml:"year" yaml:"year"`
-	Prefix    string      `boil:"prefix" json:"prefix" toml:"prefix" yaml:"prefix"`
-	CreatedAt time.Time   `boil:"created_at" json:"created_at" toml:"created_at" yaml:"created_at"`
-	Email     null.String `boil:"email" json:"email,omitempty" toml:"email" yaml:"email,omitempty"`
-	FullName  null.String `boil:"full_name" json:"full_name,omitempty" toml:"full_name" yaml:"full_name,omitempty"`
+	ID                  string    `boil:"id" json:"id" toml:"id" yaml:"id"`
+	UserID              string    `boil:"user_id" json:"user_id" toml:"user_id" yaml:"user_id"`
+	Files               string    `boil:"files" json:"files" toml:"files" yaml:"files"`
+	Type                int       `boil:"type" json:"type" toml:"type" yaml:"type"`
+	Year                int       `boil:"year" json:"year" toml:"year" yaml:"year"`
+	Prefix              string    `boil:"prefix" json:"prefix" toml:"prefix" yaml:"prefix"`
+	Paid                bool      `boil:"paid" json:"paid" toml:"paid" yaml:"paid"`
+	Email               string    `boil:"email" json:"email" toml:"email" yaml:"email"`
+	FullName            string    `boil:"full_name" json:"full_name" toml:"full_name" yaml:"full_name"`
+	GeneratedWithCoupon bool      `boil:"generated_with_coupon" json:"generated_with_coupon" toml:"generated_with_coupon" yaml:"generated_with_coupon"`
+	CreatedAt           time.Time `boil:"created_at" json:"created_at" toml:"created_at" yaml:"created_at"`
 
 	R *inquiryR `boil:"-" json:"-" toml:"-" yaml:"-"`
 	L inquiryL  `boil:"-" json:"-" toml:"-" yaml:"-"`
 }
 
 var InquiryColumns = struct {
-	ID        string
-	UserID    string
-	Files     string
-	Type      string
-	Year      string
-	Prefix    string
-	CreatedAt string
-	Email     string
-	FullName  string
+	ID                  string
+	UserID              string
+	Files               string
+	Type                string
+	Year                string
+	Prefix              string
+	Paid                string
+	Email               string
+	FullName            string
+	GeneratedWithCoupon string
+	CreatedAt           string
 }{
-	ID:        "id",
-	UserID:    "user_id",
-	Files:     "files",
-	Type:      "type",
-	Year:      "year",
-	Prefix:    "prefix",
-	CreatedAt: "created_at",
-	Email:     "email",
-	FullName:  "full_name",
+	ID:                  "id",
+	UserID:              "user_id",
+	Files:               "files",
+	Type:                "type",
+	Year:                "year",
+	Prefix:              "prefix",
+	Paid:                "paid",
+	Email:               "email",
+	FullName:            "full_name",
+	GeneratedWithCoupon: "generated_with_coupon",
+	CreatedAt:           "created_at",
 }
 
 // Generated where
 
-type whereHelperint struct{ field string }
-
-func (w whereHelperint) EQ(x int) qm.QueryMod  { return qmhelper.Where(w.field, qmhelper.EQ, x) }
-func (w whereHelperint) NEQ(x int) qm.QueryMod { return qmhelper.Where(w.field, qmhelper.NEQ, x) }
-func (w whereHelperint) LT(x int) qm.QueryMod  { return qmhelper.Where(w.field, qmhelper.LT, x) }
-func (w whereHelperint) LTE(x int) qm.QueryMod { return qmhelper.Where(w.field, qmhelper.LTE, x) }
-func (w whereHelperint) GT(x int) qm.QueryMod  { return qmhelper.Where(w.field, qmhelper.GT, x) }
-func (w whereHelperint) GTE(x int) qm.QueryMod { return qmhelper.Where(w.field, qmhelper.GTE, x) }
-func (w whereHelperint) IN(slice []int) qm.QueryMod {
-	values := make([]interface{}, 0, len(slice))
-	for _, value := range slice {
-		values = append(values, value)
-	}
-	return qm.WhereIn(fmt.Sprintf("%s IN ?", w.field), values...)
-}
-func (w whereHelperint) NIN(slice []int) qm.QueryMod {
-	values := make([]interface{}, 0, len(slice))
-	for _, value := range slice {
-		values = append(values, value)
-	}
-	return qm.WhereNotIn(fmt.Sprintf("%s NOT IN ?", w.field), values...)
-}
-
-type whereHelpernull_String struct{ field string }
-
-func (w whereHelpernull_String) EQ(x null.String) qm.QueryMod {
-	return qmhelper.WhereNullEQ(w.field, false, x)
-}
-func (w whereHelpernull_String) NEQ(x null.String) qm.QueryMod {
-	return qmhelper.WhereNullEQ(w.field, true, x)
-}
-func (w whereHelpernull_String) IsNull() qm.QueryMod    { return qmhelper.WhereIsNull(w.field) }
-func (w whereHelpernull_String) IsNotNull() qm.QueryMod { return qmhelper.WhereIsNotNull(w.field) }
-func (w whereHelpernull_String) LT(x null.String) qm.QueryMod {
-	return qmhelper.Where(w.field, qmhelper.LT, x)
-}
-func (w whereHelpernull_String) LTE(x null.String) qm.QueryMod {
-	return qmhelper.Where(w.field, qmhelper.LTE, x)
-}
-func (w whereHelpernull_String) GT(x null.String) qm.QueryMod {
-	return qmhelper.Where(w.field, qmhelper.GT, x)
-}
-func (w whereHelpernull_String) GTE(x null.String) qm.QueryMod {
-	return qmhelper.Where(w.field, qmhelper.GTE, x)
-}
-
 var InquiryWhere = struct {
-	ID        whereHelperstring
-	UserID    whereHelperstring
-	Files     whereHelperstring
-	Type      whereHelperint
-	Year      whereHelperint
-	Prefix    whereHelperstring
-	CreatedAt whereHelpertime_Time
-	Email     whereHelpernull_String
-	FullName  whereHelpernull_String
+	ID                  whereHelperstring
+	UserID              whereHelperstring
+	Files               whereHelperstring
+	Type                whereHelperint
+	Year                whereHelperint
+	Prefix              whereHelperstring
+	Paid                whereHelperbool
+	Email               whereHelperstring
+	FullName            whereHelperstring
+	GeneratedWithCoupon whereHelperbool
+	CreatedAt           whereHelpertime_Time
 }{
-	ID:        whereHelperstring{field: "\"inquiries\".\"id\""},
-	UserID:    whereHelperstring{field: "\"inquiries\".\"user_id\""},
-	Files:     whereHelperstring{field: "\"inquiries\".\"files\""},
-	Type:      whereHelperint{field: "\"inquiries\".\"type\""},
-	Year:      whereHelperint{field: "\"inquiries\".\"year\""},
-	Prefix:    whereHelperstring{field: "\"inquiries\".\"prefix\""},
-	CreatedAt: whereHelpertime_Time{field: "\"inquiries\".\"created_at\""},
-	Email:     whereHelpernull_String{field: "\"inquiries\".\"email\""},
-	FullName:  whereHelpernull_String{field: "\"inquiries\".\"full_name\""},
+	ID:                  whereHelperstring{field: "\"inquiries\".\"id\""},
+	UserID:              whereHelperstring{field: "\"inquiries\".\"user_id\""},
+	Files:               whereHelperstring{field: "\"inquiries\".\"files\""},
+	Type:                whereHelperint{field: "\"inquiries\".\"type\""},
+	Year:                whereHelperint{field: "\"inquiries\".\"year\""},
+	Prefix:              whereHelperstring{field: "\"inquiries\".\"prefix\""},
+	Paid:                whereHelperbool{field: "\"inquiries\".\"paid\""},
+	Email:               whereHelperstring{field: "\"inquiries\".\"email\""},
+	FullName:            whereHelperstring{field: "\"inquiries\".\"full_name\""},
+	GeneratedWithCoupon: whereHelperbool{field: "\"inquiries\".\"generated_with_coupon\""},
+	CreatedAt:           whereHelpertime_Time{field: "\"inquiries\".\"created_at\""},
 }
 
 // InquiryRels is where relationship names are stored.
@@ -147,8 +110,8 @@ func (*inquiryR) NewStruct() *inquiryR {
 type inquiryL struct{}
 
 var (
-	inquiryAllColumns            = []string{"id", "user_id", "files", "type", "year", "prefix", "created_at", "email", "full_name"}
-	inquiryColumnsWithoutDefault = []string{"user_id", "files", "type", "year", "prefix", "email", "full_name"}
+	inquiryAllColumns            = []string{"id", "user_id", "files", "type", "year", "prefix", "paid", "email", "full_name", "generated_with_coupon", "created_at"}
+	inquiryColumnsWithoutDefault = []string{"user_id", "files", "type", "year", "prefix", "paid", "email", "full_name", "generated_with_coupon"}
 	inquiryColumnsWithDefault    = []string{"id", "created_at"}
 	inquiryPrimaryKeyColumns     = []string{"id"}
 )

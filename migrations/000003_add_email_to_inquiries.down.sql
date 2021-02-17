@@ -1,5 +1,0 @@
-ALTER TABLE IF EXISTS inquiries
-    DROP COLUMN IF EXISTS email;
-
-ALTER TABLE IF EXISTS inquiries
-    DROP COLUMN IF EXISTS full_name;

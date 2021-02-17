@@ -26,11 +26,19 @@ func NewMailer(apiKey string) *Mailer {
 	}
 }
 
-func (m *Mailer) SendReportMail(year int, toFullName, toEmail string, report *core.Report) error {
+func (m *Mailer) SendReportMail(year int, toFullName, toEmail string, report *core.Report, couponID string) error {
 	from := mail.NewEmail(fromName, fromAddress)
 	sub := fmt.Sprintf(subject, year)
 	to := mail.NewEmail(toFullName, toEmail)
 	p := message.NewPrinter(language.Bulgarian)
+
+	var couponLine string
+	if couponID != "" {
+		couponLine = fmt.Sprintf(
+			"Use the following coupon to submit two more times: %s. It is bound to the current report type and your email only.\n",
+			couponID)
+	}
+
 	plainTextContent := fmt.Sprintf(
 		`Hi %s,
 
@@ -55,6 +63,7 @@ Transferred positions %d (%d):
 ----------------------------------------
 %s
 
+%s
 Regards,
 Nikolay`,
 		toFullName,
@@ -69,6 +78,7 @@ Nikolay`,
 		year,
 		len(report.OpenPositions),
 		buildOpenPositions(report.OpenPositions, p),
+		couponLine,
 	)
 	msg := mail.NewSingleEmail(from, sub, to, plainTextContent, "")
 	client := sendgrid.NewSendClient(m.apiKey)

@@ -388,6 +388,12 @@ github.com/spf13/jwalterweatherman
 github.com/spf13/pflag
 # github.com/spf13/viper v1.6.3
 github.com/spf13/viper
+# github.com/stripe/stripe-go/v71 v71.48.0
+## explicit
+github.com/stripe/stripe-go/v71
+github.com/stripe/stripe-go/v71/checkout/session
+github.com/stripe/stripe-go/v71/form
+github.com/stripe/stripe-go/v71/lineitem
 # github.com/subosito/gotenv v1.2.0
 github.com/subosito/gotenv
 # github.com/valyala/bytebufferpool v1.0.0

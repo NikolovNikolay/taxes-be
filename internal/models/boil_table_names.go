@@ -5,8 +5,10 @@ package models
 
 var TableNames = struct {
 	AtLeastOnceTasks string
+	Coupons          string
 	Inquiries        string
 }{
 	AtLeastOnceTasks: "at_least_once_tasks",
+	Coupons:          "coupons",
 	Inquiries:        "inquiries",
 }

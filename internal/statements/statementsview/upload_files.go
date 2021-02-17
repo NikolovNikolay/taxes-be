@@ -6,13 +6,13 @@ import (
 	"github.com/google/uuid"
 	"github.com/labstack/echo"
 	"github.com/sirupsen/logrus"
-	"github.com/volatiletech/null/v8"
 	"net/http"
 	"strconv"
 	"strings"
 	"taxes-be/internal/atleastonce"
 	awsutil "taxes-be/internal/aws"
 	"taxes-be/internal/core"
+	"taxes-be/internal/coupons/couponsdao"
 	"taxes-be/internal/inquiries/inquiriesdao"
 	"taxes-be/internal/models"
 	files2 "taxes-be/utils/files"
@@ -21,6 +21,7 @@ import (
 
 type UploadFilesEndpoint struct {
 	inquiryStore *inquiriesdao.Store
+	couponStore  *couponsdao.Store
 	aloStore     atleastonce.Store
 	s3Manager    *awsutil.S3Manager
 	bucketName   string
@@ -28,6 +29,7 @@ type UploadFilesEndpoint struct {
 
 func NewUploadFilesEndpoint(
 	inquiryStore *inquiriesdao.Store,
+	couponStore *couponsdao.Store,
 	aloStore atleastonce.Store,
 	s3Manager *awsutil.S3Manager,
 	bucketName string,
@@ -37,6 +39,7 @@ func NewUploadFilesEndpoint(
 		aloStore:     aloStore,
 		bucketName:   bucketName,
 		s3Manager:    s3Manager,
+		couponStore:  couponStore,
 	}
 }
 
@@ -67,6 +70,7 @@ func (ep *UploadFilesEndpoint) ServeHTTP(c echo.Context) error {
 	sYear := strings.Trim(req.FormValue("year"), " ")
 	sEmail := strings.Trim(req.FormValue("email"), " ")
 	sFullName := strings.Trim(req.FormValue("fullName"), " ")
+	sCoupon := strings.Trim(req.FormValue("coupon"), " ")
 
 	if sFullName == "" {
 		return core.CtxAware(req.Context(), &echo.HTTPError{
@@ -101,16 +105,60 @@ func (ep *UploadFilesEndpoint) ServeHTTP(c echo.Context) error {
 		})
 	}
 
-	allFileNames := make([]string, 0)
+	inquiryType := int(mapType(sType))
+	shouldNotPay := false
+	var coupon *models.Coupon
 
+	if sCoupon != "" {
+		id, err := uuid.Parse(sCoupon)
+		if err == nil {
+			coupon, err = ep.couponStore.FindCoupon(req.Context(), id)
+			if err != nil {
+				if core.IsNotFound(err) {
+					return core.CtxAware(req.Context(), &echo.HTTPError{
+						Code:    http.StatusBadRequest,
+						Message: "invalid coupon code",
+					})
+				}
+				return core.CtxAware(req.Context(), &echo.HTTPError{
+					Code:    http.StatusInternalServerError,
+					Message: "error processing request",
+				})
+			}
+
+			if coupon.Attempts == coupon.MaxAttempts {
+				return core.CtxAware(req.Context(), &echo.HTTPError{
+					Code:    http.StatusBadRequest,
+					Message: "expired coupon code",
+				})
+			}
+			if inquiryType != coupon.Type {
+				return core.CtxAware(req.Context(), &echo.HTTPError{
+					Code:    http.StatusBadRequest,
+					Message: "coupon code is not for this report type",
+				})
+			}
+
+			if coupon.Email != sEmail {
+				return core.CtxAware(req.Context(), &echo.HTTPError{
+					Code:    http.StatusBadRequest,
+					Message: "coupon code personalised for other user",
+				})
+			}
+			if coupon.Attempts+1 <= coupon.MaxAttempts {
+				shouldNotPay = true
+			}
+		}
+	}
+
+	allFileNames := make([]string, 0)
 	prefix := fmt.Sprintf("%d", time.Now().Unix())
 	for i := range files {
 		ext, err := files2.GetMultipartFileExtension(files[i])
 		if err != nil || !isSupportedExtension(ext, sType) {
 			return core.CtxAware(req.Context(), &echo.HTTPError{
-				Code:     http.StatusBadRequest,
-				Message:  "unsupported statement type",
-				Internal: err,
+				Code:    http.StatusBadRequest,
+				Message: "unsupported statement type - PDF only for Revolut and Excel formats for eToro",
 			})
 		}
 
@@ -141,15 +189,17 @@ func (ep *UploadFilesEndpoint) ServeHTTP(c echo.Context) error {
 
 	inquiryID := uuid.New()
 	err = ep.inquiryStore.InTransaction(req.Context(), func(ctx context.Context) error {
-		err = ep.inquiryStore.AddInquiry(ctx, &models.Inquiry{
-			ID:       inquiryID.String(),
-			UserID:   uuid.New().String(), // TODO: use real ID
-			Prefix:   prefix,
-			Files:    strings.Join(allFileNames, ","),
-			Type:     int(mapType(sType)),
-			Year:     year,
-			Email:    null.StringFrom(sEmail),
-			FullName: null.StringFrom(sFullName),
+		err = ep.inquiryStore.UpsertInquiry(ctx, &models.Inquiry{
+			ID:                  inquiryID.String(),
+			UserID:              uuid.New().String(),
+			Prefix:              prefix,
+			Files:               strings.Join(allFileNames, ","),
+			Type:                inquiryType,
+			Year:                year,
+			Email:               sEmail,
+			FullName:            sFullName,
+			Paid:                shouldNotPay,
+			GeneratedWithCoupon: shouldNotPay,
 		})
 
 		if err != nil {
@@ -160,8 +210,17 @@ func (ep *UploadFilesEndpoint) ServeHTTP(c echo.Context) error {
 			Key: "process_statement",
 			ID:  inquiryID,
 		})
+
 		if err != nil {
 			return err
+		}
+
+		if shouldNotPay {
+			coupon.Attempts = coupon.Attempts + 1
+			err = ep.couponStore.UpsertCoupon(ctx, coupon)
+			if err != nil {
+				return err
+			}
 		}
 
 		return nil

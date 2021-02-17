@@ -2,12 +2,13 @@ package statements
 
 import (
 	"context"
+	"fmt"
 	"github.com/google/uuid"
-	"github.com/sirupsen/logrus"
 	"os"
 	"strings"
 	"taxes-be/internal/atleastonce"
 	awsutil "taxes-be/internal/aws"
+	"taxes-be/internal/coupons/couponsdao"
 	"taxes-be/internal/inquiries/inquiriesdao"
 	"taxes-be/internal/sendgrid"
 )
@@ -15,7 +16,8 @@ import (
 const processStatementKey = "process_statement"
 
 type StatementManager struct {
-	inquiryStore inquiriesdao.Store
+	inquiryStore *inquiriesdao.Store
+	couponStore  *couponsdao.Store
 	s3Manager    *awsutil.S3Manager
 	alo          atleastonce.Doer
 	s3BucketName string
@@ -27,8 +29,12 @@ func NewStatementManager(
 	s3Manager *awsutil.S3Manager,
 	s3BucketName string,
 	mailer *sendgrid.Mailer,
+	inquiryStore *inquiriesdao.Store,
+	couponStore *couponsdao.Store,
 ) *StatementManager {
 	sm := &StatementManager{
+		couponStore:  couponStore,
+		inquiryStore: inquiryStore,
 		alo:          alo,
 		s3BucketName: s3BucketName,
 		s3Manager:    s3Manager,
@@ -38,10 +44,23 @@ func NewStatementManager(
 	return sm
 }
 
-func (sm *StatementManager) handleProcessStatement(ctx context.Context, uuid uuid.UUID) error {
-	inq, err := sm.inquiryStore.FindInquiry(ctx, uuid)
+func (sm *StatementManager) handleProcessStatement(ctx context.Context, id uuid.UUID) error {
+	inq, err := sm.inquiryStore.FindInquiry(ctx, id)
 	if err != nil {
-		return nil
+		return err
+	}
+
+	if !inq.Paid {
+		return fmt.Errorf("inquiry not paid")
+	}
+
+	var couponID string
+	if !inq.GeneratedWithCoupon {
+		c, err := sm.couponStore.FindCouponByRequestID(ctx, id)
+		if err != nil {
+			return err
+		}
+		couponID = c.ID
 	}
 
 	fn := strings.Split(inq.Files, ",")
@@ -52,7 +71,6 @@ func (sm *StatementManager) handleProcessStatement(ctx context.Context, uuid uui
 		if err != nil {
 			return err
 		}
-		logrus.Info("done")
 	}
 
 	err = rp.CalculateTaxes()
@@ -60,7 +78,7 @@ func (sm *StatementManager) handleProcessStatement(ctx context.Context, uuid uui
 		return err
 	}
 
-	err = sm.mailer.SendReportMail(inq.Year, inq.FullName.String, inq.Email.String, rp.report)
+	err = sm.mailer.SendReportMail(inq.Year, inq.FullName, inq.Email, rp.report, couponID)
 	if err != nil {
 		return err
 	}

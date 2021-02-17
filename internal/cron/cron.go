@@ -10,9 +10,9 @@ import (
 )
 
 func RunInternalTimer(alod *atleastonce.Doer, limit int) {
-	for range time.Tick(1 * time.Minute) {
+	for range time.Tick(30 * time.Second) {
 		ctx := context.Background()
-		ctx, span := trace.StartSpan(ctx, "cron.RunInternalTimer.Minute")
+		ctx, span := trace.StartSpan(ctx, "cron.RunInternalTimer.HalfMinute")
 		everyMinute(ctx, alod, limit)
 		span.End()
 	}

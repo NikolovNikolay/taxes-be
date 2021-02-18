@@ -6,6 +6,8 @@ import (
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/caarlos0/env"
+	"github.com/didip/tollbooth"
+	"github.com/didip/tollbooth/limiter"
 	sdformatter "github.com/joonix/log"
 	"github.com/labstack/echo"
 	"github.com/labstack/echo/middleware"
@@ -98,13 +100,18 @@ func main() {
 		couponStore,
 	)
 
+	rlm := tollbooth.NewLimiter(3, &limiter.ExpirableOptions{
+		DefaultExpirationTTL: 1 * time.Second,
+		ExpireJobInterval:    1 * time.Minute,
+	})
+
 	e := echo.New()
 	e.Validator = echoaddons.NewValidator()
 	e.HTTPErrorHandler = echoaddons.CustomHTTPErrorHandler
 	e.Use(middleware.CORS())
 
 	statementsview.RegisterStatementsEndpoints(
-		e.Group("/api/statements"),
+		e.Group("/api/statements", echoaddons.RateLimitHandler(rlm)),
 		s3Manager,
 		cfg.S3StatementsBucketName,
 		inquiryStore,
@@ -113,11 +120,15 @@ func main() {
 	)
 
 	paymentsview.RegisterEndpoints(
-		e.Group("/api/payments"),
+		e.Group("/api/payments", echoaddons.RateLimitHandler(rlm)),
 		cfg.WebsiteBaseURL,
 		couponStore,
 		inquiryStore,
 	)
+
+	e.GET("/", func(context echo.Context) error {
+		return context.NoContent(http.StatusOK)
+	}, echoaddons.RateLimitHandler(rlm))
 
 	http.Handle("/", e)
 

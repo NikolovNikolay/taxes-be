@@ -42,6 +42,8 @@ type Config struct {
 	ServerAddress    string `env:"SERVER_ADDRESS" envDefault:":8080"`
 	WebsiteBaseURL   string `env:"WEBSITE_BASE_URL" envDefault:"http://localhost:3000/#"`
 
+	ClientToken string `env:"CLIENT_TOKEN" envDefault:""`
+
 	SendgridAPIKey string `env:"SENDGRID_API_KEY" envDefault:""`
 	StripeAPIKey   string `env:"STRIPE_API_KEY" envDefault:""`
 
@@ -98,6 +100,7 @@ func main() {
 		mailer,
 		inquiryStore,
 		couponStore,
+		aloStore,
 	)
 
 	rlm := tollbooth.NewLimiter(3, &limiter.ExpirableOptions{
@@ -111,7 +114,10 @@ func main() {
 	e.Use(middleware.CORS())
 
 	statementsview.RegisterStatementsEndpoints(
-		e.Group("/api/statements", echoaddons.RateLimitHandler(rlm)),
+		e.Group("/api/statements",
+			echoaddons.AuthHandler(cfg.ClientToken),
+			echoaddons.RateLimitHandler(rlm),
+		),
 		s3Manager,
 		cfg.S3StatementsBucketName,
 		inquiryStore,
@@ -120,7 +126,10 @@ func main() {
 	)
 
 	paymentsview.RegisterEndpoints(
-		e.Group("/api/payments", echoaddons.RateLimitHandler(rlm)),
+		e.Group("/api/payments",
+			echoaddons.AuthHandler(cfg.ClientToken),
+			echoaddons.RateLimitHandler(rlm),
+		),
 		cfg.WebsiteBaseURL,
 		couponStore,
 		inquiryStore,
@@ -128,7 +137,7 @@ func main() {
 
 	e.GET("/", func(context echo.Context) error {
 		return context.NoContent(http.StatusOK)
-	}, echoaddons.RateLimitHandler(rlm))
+	})
 
 	http.Handle("/", e)
 

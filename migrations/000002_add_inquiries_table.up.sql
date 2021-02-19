@@ -10,7 +10,8 @@ CREATE TABLE IF NOT EXISTS inquiries
     email                 VARCHAR(255)                        NOT NULL,
     full_name             VARCHAR(255)                        NOT NULL,
     generated_with_coupon BOOLEAN                             NOT NULL,
-    created_at            TIMESTAMP DEFAULT current_timestamp NOT NULL
+    created_at            TIMESTAMP DEFAULT current_timestamp NOT NULL,
+    modified_at           TIMESTAMP DEFAULT current_timestamp NOT NULL
 );
 
 CREATE UNIQUE INDEX IF NOT EXISTS inquiries_id_uindex ON inquiries (id);

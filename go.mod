@@ -26,6 +26,8 @@ require (
 	github.com/sendgrid/rest v2.6.2+incompatible // indirect
 	github.com/sendgrid/sendgrid-go v3.8.0+incompatible
 	github.com/sirupsen/logrus v1.7.0
+	github.com/spf13/pflag v1.0.5 // indirect
+	github.com/stretchr/testify v1.6.1 // indirect
 	github.com/stripe/stripe-go/v71 v71.48.0
 	github.com/valyala/fasttemplate v1.2.1 // indirect
 	github.com/volatiletech/sqlboiler/v4 v4.4.0

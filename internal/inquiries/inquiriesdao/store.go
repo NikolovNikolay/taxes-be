@@ -8,6 +8,7 @@ import (
 	"taxes-be/internal/core"
 	"taxes-be/internal/daoutil"
 	"taxes-be/internal/models"
+	"time"
 )
 
 type Store struct {
@@ -46,6 +47,7 @@ func (s *Store) FindInquiry(ctx context.Context, id uuid.UUID) (*models.Inquiry,
 
 func (s *Store) UpsertInquiry(ctx context.Context, inquiry *models.Inquiry) error {
 	err := daoutil.EnsureTransaction(ctx, s.db, func(tx *sql.Tx) error {
+		inquiry.ModifiedAt = time.Now()
 		err := inquiry.Upsert(ctx, tx, true, []string{
 			models.CouponColumns.ID,
 		}, boil.Infer(), boil.Infer())

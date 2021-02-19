@@ -34,6 +34,7 @@ type Inquiry struct {
 	FullName            string    `boil:"full_name" json:"full_name" toml:"full_name" yaml:"full_name"`
 	GeneratedWithCoupon bool      `boil:"generated_with_coupon" json:"generated_with_coupon" toml:"generated_with_coupon" yaml:"generated_with_coupon"`
 	CreatedAt           time.Time `boil:"created_at" json:"created_at" toml:"created_at" yaml:"created_at"`
+	ModifiedAt          time.Time `boil:"modified_at" json:"modified_at" toml:"modified_at" yaml:"modified_at"`
 
 	R *inquiryR `boil:"-" json:"-" toml:"-" yaml:"-"`
 	L inquiryL  `boil:"-" json:"-" toml:"-" yaml:"-"`
@@ -51,6 +52,7 @@ var InquiryColumns = struct {
 	FullName            string
 	GeneratedWithCoupon string
 	CreatedAt           string
+	ModifiedAt          string
 }{
 	ID:                  "id",
 	UserID:              "user_id",
@@ -63,6 +65,7 @@ var InquiryColumns = struct {
 	FullName:            "full_name",
 	GeneratedWithCoupon: "generated_with_coupon",
 	CreatedAt:           "created_at",
+	ModifiedAt:          "modified_at",
 }
 
 // Generated where
@@ -79,6 +82,7 @@ var InquiryWhere = struct {
 	FullName            whereHelperstring
 	GeneratedWithCoupon whereHelperbool
 	CreatedAt           whereHelpertime_Time
+	ModifiedAt          whereHelpertime_Time
 }{
 	ID:                  whereHelperstring{field: "\"inquiries\".\"id\""},
 	UserID:              whereHelperstring{field: "\"inquiries\".\"user_id\""},
@@ -91,6 +95,7 @@ var InquiryWhere = struct {
 	FullName:            whereHelperstring{field: "\"inquiries\".\"full_name\""},
 	GeneratedWithCoupon: whereHelperbool{field: "\"inquiries\".\"generated_with_coupon\""},
 	CreatedAt:           whereHelpertime_Time{field: "\"inquiries\".\"created_at\""},
+	ModifiedAt:          whereHelpertime_Time{field: "\"inquiries\".\"modified_at\""},
 }
 
 // InquiryRels is where relationship names are stored.
@@ -110,9 +115,9 @@ func (*inquiryR) NewStruct() *inquiryR {
 type inquiryL struct{}
 
 var (
-	inquiryAllColumns            = []string{"id", "user_id", "files", "type", "year", "prefix", "paid", "email", "full_name", "generated_with_coupon", "created_at"}
+	inquiryAllColumns            = []string{"id", "user_id", "files", "type", "year", "prefix", "paid", "email", "full_name", "generated_with_coupon", "created_at", "modified_at"}
 	inquiryColumnsWithoutDefault = []string{"user_id", "files", "type", "year", "prefix", "paid", "email", "full_name", "generated_with_coupon"}
-	inquiryColumnsWithDefault    = []string{"id", "created_at"}
+	inquiryColumnsWithDefault    = []string{"id", "created_at", "modified_at"}
 	inquiryPrimaryKeyColumns     = []string{"id"}
 )
 

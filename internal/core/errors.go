@@ -4,6 +4,21 @@ import (
 	"context"
 )
 
+type noLogError struct {
+	error
+}
+
+func AsNoLogError(err error) error {
+	return &noLogError{
+		error: err,
+	}
+}
+
+func IsNoLogError(err error) bool {
+	_, ok := err.(*noLogError)
+	return ok
+}
+
 type validationError struct {
 	error
 }

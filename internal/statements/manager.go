@@ -9,6 +9,7 @@ import (
 	"strings"
 	"taxes-be/internal/atleastonce"
 	awsutil "taxes-be/internal/aws"
+	"taxes-be/internal/core"
 	"taxes-be/internal/coupons/couponsdao"
 	"taxes-be/internal/inquiries/inquiriesdao"
 	"taxes-be/internal/models"
@@ -67,7 +68,7 @@ func (sm *StatementManager) handleDeleteStatements(ctx context.Context, id uuid.
 	}
 
 	if time.Now().UnixNano()-inq.ModifiedAt.UnixNano() < (48 * time.Hour).Nanoseconds() {
-		return fmt.Errorf("can't delete statements yet")
+		return core.AsNoLogError(fmt.Errorf("can't delete statements yet"))
 	}
 
 	return sm.deleteInquiryFiles(inq)
@@ -98,9 +99,7 @@ func (sm *StatementManager) handleProcessStatement(ctx context.Context, id uuid.
 				return err
 			}
 		}
-		err = fmt.Errorf("inquiry not paid")
-		logrus.WithError(err).Warn("inquiry not paid")
-		return err
+		return core.AsNoLogError(fmt.Errorf("inquiry not paid"))
 	}
 
 	var couponID string

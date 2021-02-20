@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"sync"
+	"taxes-be/internal/core"
 	util "taxes-be/utils"
 	"taxes-be/utils/asynctx"
 	"time"
@@ -86,11 +87,13 @@ func (d *Doer) Try(ctx context.Context, key string, id uuid.UUID) error {
 func (d *Doer) tryAndLog(ctx context.Context, key string, id uuid.UUID) {
 	err := d.Try(ctx, key, id)
 	if err != nil {
-		logrus.WithContext(ctx).
-			WithField("key", key).
-			WithField("id", id).
-			WithError(err).
-			Errorf("at-least-once error, key: %s, id: %v", key, id)
+		if !core.IsNoLogError(err) {
+			logrus.WithContext(ctx).
+				WithField("key", key).
+				WithField("id", id).
+				WithError(err).
+				Errorf("at-least-once error, key: %s, id: %v", key, id)
+		}
 	}
 }
 

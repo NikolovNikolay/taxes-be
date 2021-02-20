@@ -43,4 +43,4 @@ migrate-rds:
 
 prepare-artifact:
 	GOARCH=amd64 GOOS=linux go build -o bin/application cmd/main.go
-	zip -r artifact.zip bin .platform
+	zip -r artifact.zip bin .platform .ebextensions

@@ -12,7 +12,7 @@ func RegisterEndpoints(
 	couponStore *couponsdao.Store,
 	inquiryStore *inquiriesdao.Store,
 ) {
-	ccs := NewCreateCheckoutSessionEndpoint(websiteBaseUrl, couponStore)
+	ccs := NewCreateCheckoutSessionEndpoint(websiteBaseUrl, inquiryStore, couponStore)
 	group.POST("/create-checkout-session", ccs.ServeHTTP)
 
 	oce := NewObtainCouponEndpoint(couponStore, inquiryStore)

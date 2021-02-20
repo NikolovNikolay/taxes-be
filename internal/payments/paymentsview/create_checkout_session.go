@@ -9,20 +9,24 @@ import (
 	"net/http"
 	"taxes-be/internal/core"
 	"taxes-be/internal/coupons/couponsdao"
+	"taxes-be/internal/inquiries/inquiriesdao"
 	util "taxes-be/utils"
 )
 
 type CreateCheckoutSessionEndpoint struct {
 	websiteBaseUrl string
 	couponStore    *couponsdao.Store
+	inquiryStore   *inquiriesdao.Store
 }
 
 func NewCreateCheckoutSessionEndpoint(
 	websiteBaseUrl string,
+	inquiryStore *inquiriesdao.Store,
 	couponStore *couponsdao.Store,
 ) *CreateCheckoutSessionEndpoint {
 	return &CreateCheckoutSessionEndpoint{
 		websiteBaseUrl: websiteBaseUrl,
+		inquiryStore:   inquiryStore,
 		couponStore:    couponStore,
 	}
 }
@@ -45,6 +49,23 @@ func (ep *CreateCheckoutSessionEndpoint) ServeHTTP(c echo.Context) error {
 		})
 	}
 
+	inq, err := ep.inquiryStore.FindInquiry(c.Request().Context(), r.RequestID)
+	if err != nil {
+		if core.IsNotFound(err) {
+			return core.CtxAware(c.Request().Context(), &echo.HTTPError{
+				Code:     http.StatusBadRequest,
+				Internal: err,
+				Message:  "invalid request ID",
+			})
+		}
+
+		return core.CtxAware(c.Request().Context(), &echo.HTTPError{
+			Code:     http.StatusInternalServerError,
+			Internal: err,
+			Message:  "could not create checkout session",
+		})
+	}
+
 	callbackTemplate := "%s/checkout?success=%v&request_id=%s"
 	params := &stripe.CheckoutSessionParams{
 		PaymentMethodTypes: stripe.StringSlice([]string{
@@ -56,13 +77,14 @@ func (ep *CreateCheckoutSessionEndpoint) ServeHTTP(c echo.Context) error {
 				PriceData: &stripe.CheckoutSessionLineItemPriceDataParams{
 					Currency: stripe.String("bgn"),
 					ProductData: &stripe.CheckoutSessionLineItemPriceDataProductDataParams{
-						Name: stripe.String("report"),
+						Name: stripe.String("statements report"),
 					},
 					UnitAmount: stripe.Int64(10 * 100),
 				},
 				Quantity: stripe.Int64(1),
 			},
 		},
+		CustomerEmail: &inq.Email,
 		SuccessURL: stripe.String(
 			fmt.Sprintf(callbackTemplate, ep.websiteBaseUrl, true, r.RequestID),
 		),

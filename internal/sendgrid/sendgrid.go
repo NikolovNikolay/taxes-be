@@ -105,8 +105,8 @@ func buildOpenPositions(op []*core.OpenPosition, p *message.Printer) string {
 			op[i].Date.Format("02-01-2006"),
 			op[i].Token,
 			op[i].Name,
-			p.Sprintf("%.2f", op[i].AmountOrigin),
-			p.Sprintf("%.2f", op[i].AmountHome),
+			p.Sprintf("%.2f", op[i].PriceOrigin),
+			p.Sprintf("%.2f", op[i].PriceHome),
 			p.Sprintf("%.5f", op[i].Units),
 		)
 	}

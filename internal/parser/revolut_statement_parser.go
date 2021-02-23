@@ -109,6 +109,9 @@ func (p *revolutStatementParser) Parse(lines []string) (*core.Report, error) {
 					if a.Type != core.Cdep && a.Type != core.Csd {
 						s := strings.Split(l, " ")
 						a.Token = s[0]
+
+						s = strings.Split(l, " - ")
+						a.Name = s[1]
 					}
 					currentCol++
 					continue

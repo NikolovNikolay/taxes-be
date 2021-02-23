@@ -36,12 +36,12 @@ func (c etoroTaxCalculator) CalculateYear(report *core.Report, year int) error {
 
 		if a.OpenDate.Year() == year && a.ClosedDate.Year() == year+1 {
 			op := &core.OpenPosition{
-				Date:         a.OpenDate,
-				Units:        a.Units,
-				AmountHome:   a.Amount * or,
-				AmountOrigin: a.Amount,
-				Token:        a.Token,
-				Name:         a.Name,
+				Date:        a.OpenDate,
+				Units:       a.Units,
+				PriceHome:   a.Amount * or,
+				PriceOrigin: a.Amount,
+				Token:       a.Token,
+				Name:        a.Name,
 			}
 			report.OpenPositions = append(report.OpenPositions, op)
 		}
@@ -90,8 +90,8 @@ func postProcessOpenPositions(report *core.Report, year int) {
 	for k := range tm {
 		positionsArray := tm[k]
 		units := 0.0
-		homeAmountSum := 0.0
-		amountSum := 0.0
+		homePriceSum := 0.0
+		priceSum := 0.0
 		var date = time.Date(year, time.December, 31, 0, 0, 0, 0, time.Local)
 
 		for i := range positionsArray {
@@ -100,17 +100,17 @@ func postProcessOpenPositions(report *core.Report, year int) {
 				date = e.Date
 			}
 			units += e.Units
-			homeAmountSum += e.AmountHome
-			amountSum += e.AmountOrigin
+			homePriceSum += e.PriceHome
+			priceSum += e.PriceOrigin
 		}
 
 		report.OpenPositions = append(report.OpenPositions, &core.OpenPosition{
-			Date:         date,
-			Units:        units,
-			AmountHome:   homeAmountSum / float64(len(positionsArray)),
-			AmountOrigin: amountSum / float64(len(positionsArray)),
-			Name:         positionsArray[0].Name,
-			Token:        k,
+			Date:        date,
+			Units:       units,
+			PriceHome:   homePriceSum / float64(len(positionsArray)),
+			PriceOrigin: priceSum / float64(len(positionsArray)),
+			Name:        positionsArray[0].Name,
+			Token:       k,
 		})
 	}
 }

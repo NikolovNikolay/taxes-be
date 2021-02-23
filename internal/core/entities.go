@@ -42,14 +42,14 @@ type LinkedActivity struct {
 }
 
 type OpenPosition struct {
-	Date         time.Time
-	PositionID   string
-	Units        float64
-	AmountHome   float64
-	AmountOrigin float64
-	Token        string
-	Name         string
-	Type         string
+	Date        time.Time
+	PositionID  string
+	Units       float64
+	PriceHome   float64
+	PriceOrigin float64
+	Token       string
+	Name        string
+	Type        string
 }
 
 type DividendMeta struct {

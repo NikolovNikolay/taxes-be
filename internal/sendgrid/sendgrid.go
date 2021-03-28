@@ -11,7 +11,7 @@ import (
 )
 
 const (
-	fromName    = "Nikolay from Digitools-it"
+	fromName    = "Nikolay from DigiTools-it"
 	fromAddress = "nikolov@digitools-it.com"
 	subject     = "Annual tax calculations for %d"
 )
@@ -40,7 +40,7 @@ func (m *Mailer) SendReportMail(year int, toFullName, toEmail string, report *co
 	}
 
 	plainTextContent := fmt.Sprintf(
-		`Hi %s,
+		`Greetings!
 
 Here are the results of the tax calculations you requested with inquiry ID %s (%d):
 
@@ -66,7 +66,6 @@ Transferred positions %d (%d):
 %s
 Regards,
 Nikolay`,
-		toFullName,
 		report.RequestID,
 		year,
 		p.Sprintf("%.2f", report.Amounts.TotalSell),

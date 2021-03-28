@@ -139,7 +139,7 @@ func (sm *StatementManager) handleProcessStatement(ctx context.Context, id uuid.
 		return err
 	}
 
-	err = sm.mailer.SendReportMail(inq.Year, inq.FullName, inq.Email, rp.report, couponID)
+	err = sm.mailer.SendReportMail(inq.Year, inq.FullName.String, inq.Email, rp.report, couponID)
 	if err != nil {
 		logrus.Error("error while calculating taxes")
 		return err

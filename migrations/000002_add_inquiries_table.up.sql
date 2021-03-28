@@ -8,7 +8,7 @@ CREATE TABLE IF NOT EXISTS inquiries
     prefix                VARCHAR(10)                         NOT NULL,
     paid                  BOOLEAN                             NOT NULL,
     email                 VARCHAR(255)                        NOT NULL,
-    full_name             VARCHAR(255)                        NOT NULL,
+    full_name             VARCHAR(255),
     generated_with_coupon BOOLEAN                             NOT NULL,
     created_at            TIMESTAMP DEFAULT current_timestamp NOT NULL,
     modified_at           TIMESTAMP DEFAULT current_timestamp NOT NULL

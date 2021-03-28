@@ -6,6 +6,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/labstack/echo"
 	"github.com/sirupsen/logrus"
+	"github.com/volatiletech/null/v8"
 	"net/http"
 	"strconv"
 	"strings"
@@ -71,14 +72,6 @@ func (ep *UploadFilesEndpoint) ServeHTTP(c echo.Context) error {
 	sEmail := strings.Trim(req.FormValue("email"), " ")
 	sFullName := strings.Trim(req.FormValue("fullName"), " ")
 	sCoupon := strings.Trim(req.FormValue("coupon"), " ")
-
-	if sFullName == "" {
-		return core.CtxAware(req.Context(), &echo.HTTPError{
-			Code:     http.StatusBadRequest,
-			Message:  "missing full name",
-			Internal: fmt.Errorf("missing full name"),
-		})
-	}
 
 	if len(files) == 0 {
 		return core.CtxAware(req.Context(), &echo.HTTPError{
@@ -197,7 +190,7 @@ func (ep *UploadFilesEndpoint) ServeHTTP(c echo.Context) error {
 			Type:                inquiryType,
 			Year:                year,
 			Email:               sEmail,
-			FullName:            sFullName,
+			FullName:            null.StringFrom(sFullName),
 			Paid:                shouldNotPay,
 			GeneratedWithCoupon: shouldNotPay,
 		})

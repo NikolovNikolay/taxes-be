@@ -1,37 +1,28 @@
 package conversion
 
 import (
-	"encoding/json"
-	"fmt"
-	log "github.com/sirupsen/logrus"
-	"io/ioutil"
-	"net/http"
+	"encoding/csv"
+	"github.com/sirupsen/logrus"
+	"io"
+	"os"
+	"strconv"
 	"taxes-be/internal/core"
 	"time"
 )
 
 const (
-	apiURL     = "https://api.exchangeratesapi.io/"
 	dateLayout = "2006-01-02"
 )
 
 type ExchangeRateService struct {
-	start string
-	end   string
 	rates map[string]map[string]float64
 }
 
-func NewExchangeRateService(start string, end string) *ExchangeRateService {
+func NewExchangeRateService() *ExchangeRateService {
 	s := &ExchangeRateService{
-		start: start,
-		end:   end,
 	}
 	s.getExchangeRates()
 	return s
-}
-
-type ratesResponse struct {
-	Rates map[string]map[string]float64 `json:"rates"`
 }
 
 func (s *ExchangeRateService) GetRateForDate(date time.Time, currency core.Currency) float64 {
@@ -50,29 +41,29 @@ func (s *ExchangeRateService) GetRateForDate(date time.Time, currency core.Curre
 }
 
 func (s *ExchangeRateService) getExchangeRates() {
-	url := fmt.Sprintf("%shistory?start_at=%s&end_at=%s&base=%s",
-		apiURL,
-		s.start,
-		s.end,
-		core.Usd,
-	)
-	res, err := http.Get(url)
-
+	csvfile, err := os.Open("resources/usd_bgn_rates.csv")
 	if err != nil {
-		panic(err.Error())
+		logrus.Fatalln("couldn't open the rates csv file", err)
 	}
 
-	body, err := ioutil.ReadAll(res.Body)
-	if err != nil {
-		panic(err.Error())
-	}
+	// Parse the file
+	rdr := csv.NewReader(csvfile)
+	rates := map[string]map[string]float64{}
+	for {
+		// Read each record from csv
+		record, err := rdr.Read()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			logrus.Fatal(err)
+		}
 
-	rr := ratesResponse{}
-	err = json.Unmarshal(body, &rr)
-	if err != nil {
-		log.Error("error while processing exchange rates response: " + err.Error())
-		panic(err.Error())
+		r, _ := strconv.ParseFloat(record[1], 64)
+		if rates[record[0]] == nil {
+			rates[record[0]] = map[string]float64{}
+		}
+		rates[record[0]][string(core.Bgn)] = r
+		s.rates = rates
 	}
-
-	s.rates = rr.Rates
 }

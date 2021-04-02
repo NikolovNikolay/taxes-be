@@ -102,46 +102,58 @@ func (ep *UploadFilesEndpoint) ServeHTTP(c echo.Context) error {
 	shouldNotPay := false
 	var coupon *models.Coupon
 
-	if sCoupon != "" {
-		id, err := uuid.Parse(sCoupon)
-		if err == nil {
-			coupon, err = ep.couponStore.FindCoupon(req.Context(), id)
-			if err != nil {
-				if core.IsNotFound(err) {
-					return core.CtxAware(req.Context(), &echo.HTTPError{
-						Code:    http.StatusBadRequest,
-						Message: "invalid coupon code",
-					})
-				}
-				return core.CtxAware(req.Context(), &echo.HTTPError{
-					Code:    http.StatusInternalServerError,
-					Message: "error processing request",
-				})
-			}
+	if sCoupon == "" {
+		return core.CtxAware(req.Context(), &echo.HTTPError{
+			Code:     http.StatusBadRequest,
+			Message:  "missing coupon code",
+			Internal: fmt.Errorf("missing coupon code"),
+		})
+	}
 
-			if coupon.Attempts == coupon.MaxAttempts {
-				return core.CtxAware(req.Context(), &echo.HTTPError{
-					Code:    http.StatusBadRequest,
-					Message: "expired coupon code",
-				})
-			}
-			if inquiryType != coupon.Type {
-				return core.CtxAware(req.Context(), &echo.HTTPError{
-					Code:    http.StatusBadRequest,
-					Message: "coupon code is not for this report type",
-				})
-			}
+	id, err := uuid.Parse(sCoupon)
+	if err != nil {
+		return core.CtxAware(req.Context(), &echo.HTTPError{
+			Code:     http.StatusBadRequest,
+			Message:  "invalid coupon code",
+			Internal: fmt.Errorf("invalid coupon code"),
+		})
+	}
 
-			if coupon.Email != sEmail {
-				return core.CtxAware(req.Context(), &echo.HTTPError{
-					Code:    http.StatusBadRequest,
-					Message: "coupon code personalised for other user",
-				})
-			}
-			if coupon.Attempts+1 <= coupon.MaxAttempts {
-				shouldNotPay = true
-			}
+	coupon, err = ep.couponStore.FindCoupon(req.Context(), id)
+	if err != nil {
+		if core.IsNotFound(err) {
+			return core.CtxAware(req.Context(), &echo.HTTPError{
+				Code:    http.StatusBadRequest,
+				Message: "invalid coupon code",
+			})
 		}
+		return core.CtxAware(req.Context(), &echo.HTTPError{
+			Code:    http.StatusInternalServerError,
+			Message: "error processing request",
+		})
+	}
+
+	if coupon.Attempts == coupon.MaxAttempts {
+		return core.CtxAware(req.Context(), &echo.HTTPError{
+			Code:    http.StatusBadRequest,
+			Message: "expired coupon code",
+		})
+	}
+	if inquiryType != coupon.Type {
+		return core.CtxAware(req.Context(), &echo.HTTPError{
+			Code:    http.StatusBadRequest,
+			Message: "coupon code is not for this report type",
+		})
+	}
+
+	if coupon.Email != sEmail {
+		return core.CtxAware(req.Context(), &echo.HTTPError{
+			Code:    http.StatusBadRequest,
+			Message: "coupon code personalised for other user",
+		})
+	}
+	if coupon.Attempts+1 <= coupon.MaxAttempts {
+		shouldNotPay = true
 	}
 
 	allFileNames := make([]string, 0)

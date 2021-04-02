@@ -36,14 +36,16 @@ type ReportProcessor struct {
 	report   *core.Report
 	deposits float64
 	rType    core.StatementType
+	rs       *conversion.ExchangeRateService
 }
 
-func NewReportProcessor(year int, id string) *ReportProcessor {
+func NewReportProcessor(year int, id string, rs *conversion.ExchangeRateService) *ReportProcessor {
 	return &ReportProcessor{
 		year: year,
 		report: &core.Report{
 			RequestID: id,
 		},
+		rs: rs,
 	}
 }
 
@@ -95,19 +97,11 @@ func (p *ReportProcessor) CalculateTaxes() error {
 		return p.report.Activities[i].Date.UnixNano() < p.report.Activities[j].Date.UnixNano()
 	})
 
-	var s, e time.Time
-
-	s, e = getRange(p.report)
-	rs := conversion.NewExchangeRateService(
-		s.AddDate(-1, 0, 0).Format("2006-01-02"),
-		e.Format("2006-01-02"),
-	)
-
 	var tc calculator.Calculator
 	if p.rType == core.Revolut {
-		tc = calculator.NewRevolutTaxCalculator(rs)
+		tc = calculator.NewRevolutTaxCalculator(p.rs)
 	} else if p.rType == core.EToro {
-		tc = calculator.NewEТoroTaxCalculator(rs)
+		tc = calculator.NewEToroTaxCalculator(p.rs)
 	} else {
 		return fmt.Errorf("can't process statement - type is unknown")
 	}

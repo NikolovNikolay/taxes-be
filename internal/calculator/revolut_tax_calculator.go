@@ -17,13 +17,16 @@ type Calculator interface {
 }
 
 type positionMetadata struct {
-	boughtUnits  float64
-	soldUnits    float64
-	lastDate     time.Time
-	name         string
-	homePrice    float64
-	foreignPrice float64
-	recordCount  int
+	boughtUnits          float64
+	boughtCount          float64
+	boughtRateForeignSum float64
+	boughtRateHomeSum    float64
+	soldUnits            float64
+	lastDate             time.Time
+	name                 string
+	homePrice            float64
+	foreignPrice         float64
+	recordCount          int
 }
 
 func NewPositionMetadata(name string) *positionMetadata {
@@ -72,14 +75,17 @@ func (c revolutTaxCalculator) CalculateYear(report *core.Report, year int) error
 
 		if a.Type == core.Buy {
 			totalBuyAmount += a.Amount * r
-			opmd.boughtUnits = opmd.boughtUnits + a.Units
-			opmd.foreignPrice = opmd.foreignPrice + a.OpenRate
-			opmd.homePrice = opmd.homePrice + (a.OpenRate * r)
+			opmd.boughtCount += 1
+			opmd.boughtRateHomeSum += a.OpenRate * r
+			opmd.boughtRateForeignSum += a.OpenRate
+			opmd.boughtUnits += a.Units
+			opmd.foreignPrice += a.OpenRate
+			opmd.homePrice += a.OpenRate * r
 		} else if a.Type == core.Sell {
 			totalSellAmount += a.Amount * r
-			opmd.soldUnits = opmd.soldUnits + (a.Units * -1)
-			opmd.foreignPrice = opmd.foreignPrice + a.ClosedRate
-			opmd.homePrice = opmd.homePrice + (a.ClosedRate * r)
+			opmd.soldUnits += a.Units * -1
+			opmd.foreignPrice += a.ClosedRate
+			opmd.homePrice += a.ClosedRate * r
 		} else if a.Type == core.Div || a.Type == core.DivNra {
 			addToDividends(dividends, a, r)
 			continue
@@ -108,8 +114,8 @@ func postProcessPositionMetadata(report *core.Report, pm map[string]*positionMet
 		op = append(op, &core.OpenPosition{
 			Date:        p.lastDate,
 			Units:       p.boughtUnits - p.soldUnits,
-			PriceHome:   p.homePrice / float64(p.recordCount),
-			PriceOrigin: p.foreignPrice / float64(p.recordCount),
+			PriceHome:   p.boughtRateHomeSum / p.boughtCount,
+			PriceOrigin: p.boughtRateForeignSum / p.boughtCount,
 			Token:       token,
 			Name:        p.name,
 		})

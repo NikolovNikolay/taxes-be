@@ -11,7 +11,7 @@ type etoroTaxCalculator struct {
 	es *conversion.ExchangeRateService
 }
 
-func NewEТoroTaxCalculator(es *conversion.ExchangeRateService) Calculator {
+func NewEToroTaxCalculator(es *conversion.ExchangeRateService) Calculator {
 	return &etoroTaxCalculator{
 		es: es,
 	}
@@ -107,8 +107,8 @@ func postProcessOpenPositions(report *core.Report, year int) {
 		report.OpenPositions = append(report.OpenPositions, &core.OpenPosition{
 			Date:        date,
 			Units:       units,
-			PriceHome:   homePriceSum / float64(len(positionsArray)),
-			PriceOrigin: priceSum / float64(len(positionsArray)),
+			PriceHome:   homePriceSum / units,
+			PriceOrigin: priceSum / units,
 			Name:        positionsArray[0].Name,
 			Token:       k,
 		})

@@ -20,6 +20,7 @@ import (
 	"taxes-be/internal/atleastonce"
 	"taxes-be/internal/atleastonce/atleastoncedao"
 	aws2 "taxes-be/internal/aws"
+	"taxes-be/internal/conversion"
 	"taxes-be/internal/coupons/couponsdao"
 	"taxes-be/internal/cron"
 	"taxes-be/internal/inquiries/inquiriesdao"
@@ -93,6 +94,7 @@ func main() {
 	s3Manager := aws2.NewS3Manager(awsSession)
 	mailer := sendgrid.NewMailer(cfg.SendgridAPIKey)
 
+	rs := conversion.NewExchangeRateService()
 	statements.NewStatementManager(
 		*aloDoer,
 		s3Manager,
@@ -101,6 +103,7 @@ func main() {
 		inquiryStore,
 		couponStore,
 		aloStore,
+		rs,
 	)
 
 	rlm := tollbooth.NewLimiter(3, &limiter.ExpirableOptions{

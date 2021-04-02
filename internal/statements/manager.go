@@ -9,6 +9,7 @@ import (
 	"strings"
 	"taxes-be/internal/atleastonce"
 	awsutil "taxes-be/internal/aws"
+	"taxes-be/internal/conversion"
 	"taxes-be/internal/core"
 	"taxes-be/internal/coupons/couponsdao"
 	"taxes-be/internal/inquiries/inquiriesdao"
@@ -28,6 +29,7 @@ type StatementManager struct {
 	alo          atleastonce.Doer
 	s3BucketName string
 	mailer       *sendgrid.Mailer
+	rs           *conversion.ExchangeRateService
 }
 
 func NewStatementManager(
@@ -38,6 +40,7 @@ func NewStatementManager(
 	inquiryStore *inquiriesdao.Store,
 	couponStore *couponsdao.Store,
 	aloStore atleastonce.Store,
+	rs *conversion.ExchangeRateService,
 ) *StatementManager {
 	sm := &StatementManager{
 		couponStore:  couponStore,
@@ -47,6 +50,7 @@ func NewStatementManager(
 		s3Manager:    s3Manager,
 		mailer:       mailer,
 		aloStore:     aloStore,
+		rs:           rs,
 	}
 
 	alo.RegisterHandler(processStatementKey, sm.handleProcessStatement)
@@ -113,7 +117,7 @@ func (sm *StatementManager) handleProcessStatement(ctx context.Context, id uuid.
 	}
 
 	fn := strings.Split(inq.Files, ",")
-	rp := NewReportProcessor(inq.Year, inq.ID)
+	rp := NewReportProcessor(inq.Year, inq.ID, sm.rs)
 
 	for i := range fn {
 		err = sm.handleSingleFile(fn[i], inq.Type, rp)

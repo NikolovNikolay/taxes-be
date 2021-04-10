@@ -80,6 +80,7 @@ type Activity struct {
 	Name       string
 	Currency   Currency
 	Type       ActivityType
+	OpenDate   time.Time
 	Date       time.Time
 	Amount     float64
 	Units      float64

@@ -12,7 +12,6 @@ import (
 
 	"sort"
 	"strings"
-	"time"
 )
 
 const (
@@ -124,16 +123,4 @@ func getStatementType(lines []string) core.StatementType {
 		}
 	}
 	return core.Unknown
-}
-
-func getRange(report *core.Report) (start, end time.Time) {
-	a := report.Activities
-	if len(a) == 0 {
-		return time.Now(), time.Now()
-	}
-
-	start = a[0].Date
-	end = a[len(a)-1].Date
-
-	return
 }

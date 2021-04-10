@@ -52,10 +52,11 @@ func (c revolutTaxCalculator) CalculateYear(report *core.Report, year int) error
 	var totalBuyAmount float64
 	var totalSellAmount float64
 	dividends := make(map[int64]map[string]*core.Dividend)
-
+	var b float64 = 0.0
+	var s float64 = 0.0
 	for _, a := range report.Activities {
 
-		if a.Date.Year() != year {
+		if a.Activity.OpenDate.Year() != year || a.Date.Year() != year {
 			logrus.Debug("activity profit/loss not in current year", a)
 			continue
 		}
@@ -71,6 +72,12 @@ func (c revolutTaxCalculator) CalculateYear(report *core.Report, year int) error
 			opmd = c.openPositionMap[a.Token]
 			opmd.recordCount = opmd.recordCount + 1
 			opmd.lastDate = a.Date
+		}
+
+		if a.Type == core.Buy {
+			b += a.Amount
+		} else if a.Type == core.Sell {
+			s += a.Amount
 		}
 
 		if a.Type == core.Buy {

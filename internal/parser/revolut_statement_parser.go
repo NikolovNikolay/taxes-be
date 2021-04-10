@@ -74,10 +74,11 @@ func (p *revolutStatementParser) Parse(lines []string) (*core.Report, error) {
 
 		if expectActivities {
 			if !inActivity {
-				_, err := parseDate(l)
+				od, err := parseDate(l)
 				if err == nil {
 					inActivity = true
 					a = core.LinkedActivity{}
+					a.Activity.OpenDate = od
 					currentCol++
 				}
 				continue
@@ -124,7 +125,9 @@ func (p *revolutStatementParser) Parse(lines []string) (*core.Report, error) {
 					a.Units = units
 					currentCol++
 					if isSkipCol {
-						a.Amount = a.Units
+						i := fmt.Sprintf("%.2f", a.Units)
+						v, _ := strconv.ParseFloat(i, 2)
+						a.Amount = v
 						a.Units = 0
 						currentCol = getEndCol()
 					}
@@ -143,13 +146,17 @@ func (p *revolutStatementParser) Parse(lines []string) (*core.Report, error) {
 					continue
 				case 8:
 					if isSkipCol {
-						a.Amount = a.Units
+						i := fmt.Sprintf("%.2f", a.Units)
+						v, _ := strconv.ParseFloat(i, 2)
+						a.Amount = v
 					} else {
 						amount, err := parseFloat(l)
 						if err != nil {
 							return nil, err
 						}
-						a.Amount = amount
+						i := fmt.Sprintf("%.2f", amount)
+						v, _ := strconv.ParseFloat(i, 2)
+						a.Amount = v
 					}
 					currentCol++
 					continue
